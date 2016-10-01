@@ -1,0 +1,22 @@
+var fullAc = "{!Case.Account}" 
+var fullAs = "{!Case.Asset}" 
+var accName = fullAc; 
+var assName = fullAs; 
+var tempAccName = ''; 
+var specialCars = "{! $Label.SpecialCharectersToExcept}"; 
+if(specialCars.length > 1){ 
+	for (j = 0; j < specialCars.split(",").length; j++) { 
+		var curSplChar = specialCars.split(",")[j]; 
+		if(accName.indexOf(curSplChar) != -1){ 
+			accName = accName.replace(curSplChar, '');
+		} 
+		if(assName.indexOf(curSplChar) != -1){ 
+			assName = assName.replace(curSplChar, '');
+		}
+	}  	
+}
+if (typeof(srcUp) == 'function') { 
+srcUp("setup/ui/recordtypeselect.jsp?ent=WorkOrder&save_new_url=%2F0WO%2Fe&CF00N63000000Qtb9={!Case.CaseNumber}&Asset="+assName+"&Asset_lkid={!Case.AssetId}&Contact={!Case.Contact}&Contact_lkid={!Case.ContactId}&Account="+ accName +"&Account_lkid={!Case.AccountId}"); 
+} else { 
+window.parent.location.href="setup/ui/recordtypeselect.jsp?ent=WorkOrder&save_new_url=%2F0WO%2Fe&CF00N63000000Qtb9={!Case.CaseNumber}&Asset="+assName+"&Asset_lkid={!Case.AssetId}&Contact={!Case.Contact}&Contact_lkid={!Case.ContactId}&Account="+ accName +"&Account_lkid={!Case.AccountId}"; 
+}
