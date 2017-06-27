@@ -1,0 +1,1574 @@
+public class PartnerTaskController {
+    
+    @TestVisible private Task task;
+    public Case serviceRequest{get;set;}
+    public Product__c prod {get;set;}
+    public boolean VBlockSerialNumberWarning{get;set;}
+    public string assignedTo{get;set;}
+    public boolean renderCollaborationTemplate{get;set;}
+    public boolean renderCollaborationTemplateNew{get;set;}
+    public boolean nextPage{get;set;}
+    public boolean initialPage{get;set;}
+    public Map<String, servicesProduct> servicesProductMap {get; set;}
+    ProductInfoOnCaseHelper prodInfoOnCaseHelper;
+    ProductUtils prodUtils;
+    public ComponentEntitlementDetail ceDetailRec{get;set;}
+    public String selCompType{get;set;}
+    public String selCompItem{get;set;}
+    public String selCompVersion{get;set;}
+    public String selSerialNum{get;set;}
+    public String selSiteID{get;set;}
+    public List<SelectOption> compTypeOptions{get;set;}
+    public List<SelectOption> relevantCompItemOptions{get;set;}
+    public List<SelectOption> relevantCompVersionOptions{get;set;}
+    public List<SelectOption> availTechCodeOptions{get;set;}
+    public List<SelectOption> relevantsubTechCodeOptions{get;set;}
+    public List<SelectOption> relevantPbmCodeOptions{get;set;}
+    public boolean ErrorMessage {get;set;}
+    public String errorValue {get;set;}
+    
+    public boolean isSelEntEMCSoftware{get;set;}
+    public boolean isEMCTask{get;set;}
+    public boolean isVMWareTask{get;set;}
+    public boolean isCiscoTask{get;set;}
+    
+    public String selCompTypeByName{get;set;}
+    public String selCompItemByName{get;set;}
+    public String selCompVersionByName{get;set;}
+    public String selSiteIDByName{get;set;}
+    public String selSerialNumByName{get;set;}
+    
+    public boolean isSupportedByCisco {get;set;}
+    public boolean isSupportedByCiscoMessageDisplay {get;set;}
+    public boolean isAlreadyHaveCiscoTask {get;set;}
+    public string infoMessage {get;set;}    
+    public string CiscoCCOID {get;set;}    
+    public map<id, user> userRecord;
+    public integer descriptionLength {get;set;} 
+    
+    //collaboration request fields
+    public string AgentName {get;set;}
+    public string AgentTitle {get;set;}
+    public string AgentTheater {get;set;}
+    public string customerCompanyName {get;set;}
+    public list<selectOption> multiComponentUpgrade {get;set;}
+    public string multiComponentUpgradeValue {get;set;}
+    //public string product_If_VNX {get;set;}
+    public string VCE_System_Serial_Number {get;set;}
+    //public string Address {get;set;}
+    //public string BusinessImpact {get;set;}
+    public string VCEContact {get;set;}
+    //public string CurrentCode {get;set;}
+    public string ContactPhone {get;set;}
+    //public string TargetCode {get;set;}
+    public string ContactEmail {get;set;}
+    public dateTime RequestedTargetDate {get;set;}
+    public string CustomerContact {get;set;}
+    //public string SpecialInstructions {get;set;}
+    public string CustomerMobile {get;set;}
+    public string CustomerPhone {get;set;}
+    public string CustomerEmail {get;set;}
+    public string VCEAccountName {get;set;}
+    //public string Summary {get;set;}
+    //public string Evidence {get;set;}
+    public string LogLocation  {get;set;}
+    //public string PartType {get;set;}
+    //public string DefectiveSerialNumber {get;set;}
+    //public string DefectivePartNumber {get;set;}
+    //public string PartLocation {get;set;}
+    //public string Quantity {get;set;}
+    //public string InputComments {get;set;}
+    public list<selectOption> ContractType  {get;set;}
+    //public string ContractTypeValue {get;set;}
+    public list<selectOption> DisruptiveToEnvironment {get;set;}
+    //public string DisruptiveToEnvironmentValue {get;set;}
+    public list<selectOption> HotSpareInvoked {get;set;}
+    //public string HotSpareInvokedValue {get;set;}
+    public list<selectOption> Online {get;set;}
+    //public string OnlineValue {get;set;}
+    public list<selectOption> ifDriveReadyForReplacement {get;set;}
+    //public string ifDriveReadyForReplacementValue {get;set;}
+    //public string multiComponentUpgradeText {get;set;}
+    
+    public string   vProductsAffected {get;set;}
+    //public string   vProblemDescription {get;set;}
+    //public string   vResultsOfInvestigation {get;set;}
+    //public string   FESpecialInstructions  {get;set;}
+    public DateTime vExpectedDateOfEngagement {get;set;}
+    public string   vVCESystemModel {get;set;}
+    public string   vVCESRNumber {get;set;}
+    //public string   logExtract {get;set;}
+    //public string   AdditionalDetails {get;set;}
+    //public string   logExtract2 {get;set;}
+    public DateTime FETimeDate {get;set;}
+    
+    public boolean  disableTechSubTechCode {get;set;}//Added By Rohit 
+    public SupportPartnerCollaborationInfo__c supportPartnerCollabInfo {get;set;}//Added By Rohit 
+    private boolean proceed;
+    
+    public partnerTaskController(){}
+    public list<SelectOption> setRelevantsubTechCodeOptions(){
+        relevantsubTechCodeOptions = prodInfoOnCaseHelper.getCiscoSubTechCodeOptions(serviceRequest.Cisco_Tech_Code__c);
+        return null;
+    }
+    public list<SelectOption> setRelevantPbmCodeOptions(){
+        relevantPbmCodeOptions = prodInfoOnCaseHelper.getCiscoProblemCodeOptions(serviceRequest.Cisco_Tech_Code__c, serviceRequest.Cisco_Sub_Tech_Code__c);
+        return null;
+    }
+    public partnerTaskController(ApexPages.StandardController controller) {
+        try{
+            system.debug('In Constructor !!!!');
+            isSupportedByCisco = false;
+            isSupportedByCiscoMessageDisplay = false;
+            infoMessage = '';   
+            isAlreadyHaveCiscoTask = false;
+            this.task = (Task)controller.getRecord();
+            VBlockSerialNumberWarning = false;
+            isSelEntEMCSoftware = false;
+            isEMCTask=false;
+            isVMWareTask = false;
+            isCiscoTask = false;
+            initialPage = true;
+            supportPartnerCollabInfo = new  SupportPartnerCollaborationInfo__c();//Added By Rohit
+            disableTechSubTechCode = false;//Added By Rohit
+            
+            string whatId = Apexpages.currentPage().getParameters().get('What_Id');
+            
+            serviceRequest = [Select Id, isCreatedByVCE__c, Vblock_Entitlement__r.Vblock_Item_Formula__c, Impact_to_your_business__c, FTP_Link__c, caseNumber, Affected_Host_Names__c , Account.Customer_Advocate__c, Account.Customer_Advocate__r.name, Account.Customer_Advocate__r.email, Account.Customer_Advocate__r.phone, 
+                                Vblock_Entitlement__r.name, Vblock_Entitlement__r.Customer_Advocate__r.phone, Vblock_Entitlement__r.Customer_Advocate__r.email, Vblock_Entitlement__r.Customer_Advocate__r.name, Vblock_Entitlement__r.Customer_Advocate_Email__c, Vblock_Entitlement__r.Site__r.Site_Address__c,
+                                Vblock_Entitlement__r.Site__r.State_Subdivision__r.name,Vblock_Entitlement__r.Site__r.Country__r.name,Vblock_Entitlement__r.Site__r.Postal_Code__c, Theater_VCE_LLC__c, subject, contact.name, account.name, contact.email, contact.phone, contact.MobilePhone, 
+                                Cisco_Component__r.Component_Type_List__r.Name, Status, Priority, Account.White_Glove_Program__c, Prime_Product__c, Cisco_Component__r.Name, EMC_Component_Item__r.Component_Type_List__r.Name, VMware_Component_Item__r.Component_Type_List__r.Name, EMC_Contract_ID__c, Already_Added_EMC__c, Already_Added_VMware__c, 
+                                Already_Added_Cisco__c, ContactId, Cisco_Version__c, ownerId, RPA_Serial_ID__c, EMC_Component_Item__c , EMC_Component_Item__r.Component_Type_List__c, VMware_Component_Item__c, VMware_Component_Item__r.Component_Type_List__c, EMC_Version__c, VMWare_Version__c,  Cisco_Component__c, 
+                                Cisco_Component__r.Component_Type_List__c, Cisco_Sub_Tech_Code__c, AccountId, Cisco_Contract_ID__c, Vblock_Entitlement__c , VCE_Contract_ID__c , Vblock_Serial_Number__c , Cisco_CCO_ID__c, Cisco_Serial_Number__c, Cisco_Tech_Code__c, Cisco_Problem_Code__c, 
+                                EMC_Serial_Number__c, EMC_Site_ID__c, EMC_Product_Name__c, EMC_Product_Version__c, Vmware_License_Key__c, Vmware_License_Expiration_Date__c, Vmware_Entity_Responsible_For_Support__c, VMware_Product_Name__c, VMware_Product_Version__c, Vmware_Product_Build__c, 
+                                Cisco_Engaged_On__c, FETimeDate__c, Cisco_Component_Name__c/*, Part_Number__c,Cisco_Component_Location__c */
+                              From Case 
+                              Where Id = :Apexpages.currentPage().getParameters().get('What_Id')];
+            
+            setTaskRecordValues();
+            
+            //Initialise helper for product information
+            prodInfoOnCaseHelper = new ProductInfoOnCaseHelper(serviceRequest.Vblock_Serial_Number__c, task.VCE_Assigned_To__c);
+            prodUtils = new ProductUtils();
+            //Set flag if Cisco Task is already Available
+            if(null != serviceRequest.Cisco_Engaged_On__c){
+                isAlreadyHaveCiscoTask = true;
+            }
+            userRecord = new Map<Id, user>([select id, UserType, title, Theater__c, name, Phone, email from user where id = :userinfo.getUserId() OR id = :serviceRequest.OwnerId]);
+            //Get CCO ID
+            if(isCiscoTask) {
+                try {
+                    User loggedInUser = [Select Id, UserType, Cisco_Dot_Com_User_ID__c from User where ContactId = :serviceRequest.ContactId];
+                    if(loggedInUser!=null){
+                        serviceRequest.Cisco_CCO_ID__c = loggedInUser.Cisco_Dot_Com_User_ID__c;
+                    }
+                }
+                catch (Exception ex) {
+                    system.debug('No User for Contact :'+ex);
+                }
+                availTechCodeOptions = prodInfoOnCaseHelper.getCiscoTechCodeOptions();
+                relevantsubTechCodeOptions = prodInfoOnCaseHelper.getCiscoSubTechCodeOptions(serviceRequest.Cisco_Tech_Code__c);
+                relevantPbmCodeOptions = prodInfoOnCaseHelper.getCiscoProblemCodeOptions(serviceRequest.Cisco_Tech_Code__c, serviceRequest.Cisco_Sub_Tech_Code__c);
+                
+            }
+            system.debug('serviceRequest.Cisco_CCO_ID__c :'+serviceRequest.Cisco_CCO_ID__c);
+            
+            // Check to enable the VBlock Serial Number Warning message.
+            List<Vblock_Entitlement__c> vbEntitlements = [SELECT id,Name from Vblock_Entitlement__c WHERE Account__c = : serviceRequest.AccountId AND Name = :serviceRequest.Vblock_Serial_Number__c  LIMIT 1];
+            system.debug('vbEntitlements :'+vbEntitlements);
+            if(vbEntitlements.isEmpty()){
+                VBlockSerialNumberWarning = true;
+            }
+            
+            
+            
+            ceDetailRec = new ComponentEntitlementDetail();
+            ceDetailRec.isMultiple = false;
+            ceDetailRec.isSoftware = false;
+            //build the serviceProductInfo Hierarchy
+            setProdInfoHierarchy();
+        }
+        catch(Exception ex){
+            //ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Internal Error').Value__c));
+            //SystemUtils.createApexExceptionLog(ex,'PartnerTaskController');
+            System.debug('*** Exception: '+ex +'\n @ : '+ ex.getLineNumber());
+        }
+        
+    }
+    
+    //Logic for Cancel button: On Cancel, Page redirects to Parent SR Screen
+    public PageReference Cancel(){
+        system.debug('serviceRequest :'+serviceRequest);
+        PageReference srPage = new ApexPages.StandardController(serviceRequest).view();
+        srPage.setredirect(true);
+        return srPage;
+    }
+    
+    
+    public PageReference next(){
+        isSupportedByCiscoMessageDisplay = false;
+		infoMessage = ''; 
+        if((selCompType == null) || (selCompType == '-None-')){
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Invalid Data Error').Value__c));         
+            //ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Component Type cannot be null'));
+            return null; 
+        }
+        
+        if((selCompItem == null) || (selCompItem == '-None-')){
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Invalid Data Error').Value__c));         
+            //ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Component Item cannot be null'));
+            return null;
+            
+        }
+        
+        if((selCompVersion == null) || (selCompVersion == '-None-')){
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Invalid Data Error').Value__c));         
+            //ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Component Version cannot be null'));
+            return null;
+            
+        }   
+        if(isCiscoTask && null == serviceRequest.Cisco_CCO_ID__c){          
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Invalid Data Error').Value__c));         
+            return null;
+        }       
+        
+        if(isCiscoTask && (serviceRequest.Cisco_Tech_Code__c == 'null' || string.isBlank(serviceRequest.Cisco_Tech_Code__c))){          
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Invalid Data Error').Value__c));         
+            return null;
+        }  
+        if(isCiscoTask && (serviceRequest.Cisco_Sub_Tech_Code__c == 'null' || string.isBlank(serviceRequest.Cisco_Sub_Tech_Code__c))){      
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Invalid Data Error').Value__c));         
+            return null;
+        }  
+        if(isCiscoTask && (serviceRequest.Cisco_Problem_Code__c == 'null' || string.isBlank(serviceRequest.Cisco_Problem_Code__c))){        
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Invalid Data Error').Value__c));         
+            return null;
+        }  
+        try{
+            PageReference pr = ApexPages.CurrentPage();  
+            
+            //if(task.VCE_Assigned_To__c == Label.VMWare && serviceRequest.VMware_Entity_Responsible_for_Support__c == Label.Cisco){
+            if(isSupportedByCisco){
+                if(isAlreadyHaveCiscoTask){
+                    infoMessage = Label.CiscoTaskAlreadyExists;                                     
+                }
+                else{
+                    task.VCE_Assigned_To__c = Label.Cisco;
+                    //pr.getParameters().put('RecordType',TaskUtils.getTaskRecordTypeId('Cisco Task').substring(0,15));               
+                    //pr.getParameters().put('RecordType',TaskUtils.getTaskRecordTypeId(Label.CiscoRecordType).substring(0,15));
+                    for(Generic_Validator__c gs:Generic_Validator__c.getAll().Values()){
+                        if(gs.VCE_Assigned_To__c == task.VCE_Assigned_To__c){
+                            pr.getParameters().put('RecordType',gs.Name);
+                            isCiscoTask = true;
+                            isVMWareTask = false;
+                            break;
+                        }            
+                    }
+                    
+                    if(serviceRequest.Cisco_CCO_ID__c == null) {
+                        try {
+                            User loggedInUser = [Select Id, UserType, Cisco_Dot_Com_User_ID__c from User where ContactId = :serviceRequest.ContactId];
+                            if(loggedInUser!=null){
+                                serviceRequest.Cisco_CCO_ID__c = loggedInUser.Cisco_Dot_Com_User_ID__c;
+                            }
+                        }
+                        catch (Exception ex) {
+                            system.debug('No User for Contact :'+ex);
+                        }
+                    }
+                }            
+            }  
+            
+            nextPage = true;
+            initialPage = false;
+            
+            system.debug('I am set=====>'+serviceRequest.Cisco_Problem_Code__c+'==>'+serviceRequest.Cisco_Sub_Tech_Code__c+'==>'+serviceRequest.Cisco_Tech_Code__c);
+            system.debug('serviceRequest.Cisco_CCO_ID__c :'+serviceRequest.Cisco_CCO_ID__c);
+            getComponentDetailsByName();
+            setProductInformationOnCase();
+            loadSubjectOnServiceRequest();
+            
+            buildCollaborationRequestData();
+            ceDetailRec = null;
+            system.debug('In Next()');
+            system.debug('isEMCTask     : '+ isEMCTask);
+            system.debug('isCiscoTask   : '+ isCiscoTask);
+            system.debug('isVMWareTask  : '+ isVMWareTask);     
+            system.debug('Task : '+ task);
+            ceDetailRec = null;
+            System.debug('COntract NUmber===>'+serviceRequest.cisco_contract_ID__c);
+            return pr;
+        }
+        catch(Exception ex){
+            //ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Internal Error '+ex));
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Internal Error').Value__c));
+            SystemUtils.createApexExceptionLog(ex,'PartnerTaskController');
+            System.debug('*** Exception: '+ex +'\n @ : '+ ex.getLineNumber());
+            return null;
+        }
+    }
+    
+    
+    public PageReference preview(){
+        
+        try{
+            proceed = true;
+            system.debug('serviceRequest.FETimeDate__c :'+serviceRequest.FETimeDate__c);
+            validateData();
+            if(proceed){                
+                buildCollaborationTemplates();
+                descriptionLength = task.description.length();
+                if(descriptionLength > Schema.sObjectType.Case_Note__c.fields.Note_Comments__c.length){
+                    ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('CaseCommentLengthError').Value__c));
+                    return null;
+                }
+                renderCollaborationTemplateNew = true;
+                system.debug('serviceRequest from preview :'+serviceRequest);
+                system.debug('descriptionLength :'+descriptionLength);
+                return null; 
+            }else{
+                buildPageErrorMessage();
+                return null;
+            }
+            
+        }catch(Exception ex){
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Internal Error').Value__c));
+            SystemUtils.createApexExceptionLog(ex,'PartnerTaskController');
+            System.debug('*** Exception: '+ex +'\n @ : '+ ex.getLineNumber());
+            //ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Internal Error '+ex));
+            return null;
+        }
+        return null;
+    }
+    
+    
+    
+    public PageReference save(){
+        try{
+            proceed = true;
+            validateData();
+             errorValue = '';
+            system.debug('serviceRequest.FETimeDate__c :'+serviceRequest.FETimeDate__c);
+            if(proceed){
+                system.debug('renderCollaborationTemplateNew Inside:'+renderCollaborationTemplateNew);
+                renderCollaborationTemplateNew = true;
+                buildCollaborationTemplates();
+                
+                descriptionLength = task.description.length();
+                if(descriptionLength > Schema.sObjectType.Case_Note__c.fields.Note_Comments__c.length){
+                    errorValue = 'true';
+                    ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('CaseCommentLengthError').Value__c));
+                    return null;
+                }
+                errorValue = '';
+                system.debug('serviceRequest from Save :'+serviceRequest);
+                update serviceRequest;
+                
+                if(task.IsReminderSet == true){
+                    setReminder();
+                }else{
+                    task.ReminderDateTime = system.now();
+                }
+                
+                //Change the Task Record type to CSS External Assignment
+                string cssexternal = TaskUtils.getTaskRecordTypeId('CSS External Assignment').substring(0,15);
+                //string cssexternal = TaskUtils.getTaskRecordTypeId(Label.CSSExternalAssignmentRecordType).substring(0,15);
+                task.RecordTypeId = cssexternal;
+                //Start : Added By Rohit.
+                //Insert  SupportPartnerCollaborationInfo and Associate the ID with Task.
+                system.debug('### SupportPartnerCollabInfo : ' + supportPartnerCollabInfo);
+                insert supportPartnerCollabInfo;
+                task.SupportPartnerCollaborationInfo__c = supportPartnerCollabInfo.Id;
+                //End : Added By Rohit.
+                Insert task; 
+                
+                //Call future method to insert the collaboration template for tasks on existing cases - prior to B2B reengineering - Identified by isCreatedByVCE flag on case
+                system.debug('serviceRequest.isCreatedByVCE__c :'+serviceRequest.isCreatedByVCE__c);
+                if(!serviceRequest.isCreatedByVCE__c){
+                    System.debug('===============================>I am in future');
+                    insertCaseCommentForPartner(task.Id);
+                }
+            }else{
+                errorValue = 'true';
+                
+                buildPageErrorMessage();
+                return null; 
+            }
+        }
+        catch(Exception ex){
+            errorValue = 'true';
+            
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,ex.getMessage()));
+            //SystemUtils.createApexExceptionLog(ex,'PartnerTaskController');
+            System.debug('*** Exception: '+ex +'\n @ : '+ ex.getLineNumber());
+            return null; 
+        }
+        errorValue = '';
+        string serviceCloudCheck;
+        if(ApexPages.currentPage().getParameters().containsKey('isdtp')){
+            serviceCloudCheck = ApexPages.currentPage().getParameters().get('isdtp');
+        }
+        if(serviceCloudCheck == 'vw'){
+            return null;    
+        }
+        else{
+            PageReference srPage = new ApexPages.StandardController(serviceRequest).view();
+            srPage.setredirect(true);
+            return srPage;                     
+        }
+               
+    }
+    
+    public void buildPageErrorMessage(){
+        
+        string productError = '';
+        system.debug('task.Route_To__c :'+task.Route_To__c);
+        if(String.IsBlank(supportPartnerCollabInfo.Product_if_VNX__c) && selCompItemByName.contains('VNX') && task.Route_To__c == Label.Direct_Dispatch_Upgrade){
+            productError = 'Product should not be empty if component item Contain VNX';
+        }
+        ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Invalid Data Error').Value__c + ' ' + productError ));
+    }
+    
+    @TestVisible
+    private void buildCollaborationTemplates(){
+        string emailTemplateName = getEmailTemplateByName();
+        renderCollaborationTemplateNew = true;
+        
+        //Build the Map for collaboration template fields --> Based on the Route To and VCE Assigned To
+        Map<string, String> mapOfFieldsToReplace = loadMapForCollaborationTemplate();
+        
+        //Load the collaboration template based on the the VCE Assgined To and Route To fields
+        loadCollaborationTemplate(mapOfFieldsToReplace, emailTemplateName);
+    }
+    @TestVisible
+    private void loadSubjectOnServiceRequest(){
+        string subject = '';
+        if(task.VCE_Assigned_To__c == label.EMC){
+            subject = selCompItemByName + ' ! ' + serviceRequest.Account.name + ' ! ' + serviceRequest.Subject;
+            if(task.Route_To__c == 'Direct Dispatch Upgrade'){
+                subject = selCompItemByName + ' ! ' + serviceRequest.Account.name + ' ! ' +  '<VCEUpgrade>';
+            }
+            if(task.Route_To__c == 'Direct Dispatch Parts'){
+                subject = selCompItemByName + ' ! ' + serviceRequest.Account.name + ' ! '  + '<VCEdispatch>';
+            }
+        }
+        
+        if(task.VCE_Assigned_To__c == label.VMWare){
+            
+            subject =  serviceRequest.Theater_VCE_LLC__c + ' ! ' + selCompItemByName + ' ! ' + serviceRequest.Account.name + ' ! ' + serviceRequest.Subject;
+        }
+        
+        if(task.VCE_Assigned_To__c == label.Cisco){
+            subject = selCompItemByName + ' ! ' + serviceRequest.Account.name + ' ! ' + serviceRequest.Subject;
+        }
+        if(subject.length() > 255){
+            task.Subject = subject.subString(0,255);  
+        }
+        else{
+            task.Subject = subject;
+        }
+    }
+    
+    @TestVisible
+    private string getEmailTemplateByName(){
+        system.debug('task.VCE_Assigned_To__c :'+task.VCE_Assigned_To__c);
+        string emailTemplateName;
+        if(task.VCE_Assigned_To__c == label.EMC){
+            emailTemplateName = 'EMC Standard Template';
+            if(task.Route_To__c == 'Direct Dispatch Upgrade'){
+                emailTemplateName = 'EMC Direct Dispatch Upgrade Template';
+            }
+            if(task.Route_To__c == 'Direct Dispatch Parts'){
+                emailTemplateName = 'EMC Direct Dispatch Parts Template';
+            }
+        }
+        if(task.VCE_Assigned_To__c == label.VMWare){
+            emailTemplateName = 'VMWare Standard Template'; 
+        }
+        if(task.VCE_Assigned_To__c == label.Cisco){
+            emailTemplateName = 'Cisco Standard Template';
+            if(task.Route_To__c == 'RMA'){
+                emailTemplateName = 'Cisco RMA Template';
+            }
+            
+        }
+        return emailTemplateName;
+    }
+    @TestVisible
+    private void getComponentDetailsByName(){
+        
+        for(selectOption so: compTypeOptions){
+            if(so.getValue() == selCompType){
+                selCompTypeByName = so.getLabel();
+                break;
+            }
+        }
+        
+        for(selectOption so: relevantCompItemOptions){
+            if(so.getValue() == selCompItem){
+                selCompItemByName = so.getLabel();
+                break;
+            }
+        }
+        
+        for(selectOption so: relevantCompVersionOptions){
+            if(so.getValue() == selCompVersion){
+                selCompVersionByName = so.getLabel();
+                break;
+            }
+        }
+        if(ceDetailRec!=null && ceDetailRec.serialNumberList!=null){
+            for(selectOption so: ceDetailRec.serialNumberList){
+                if(so.getValue() == selSerialNum){
+                    selSerialNumByName = so.getLabel();
+                    break;
+                }
+            }
+        }
+    }
+    //Method to assign product values
+    @TestVisible
+    void setProductInformationOnCase(){
+        if(isEMCTask){
+            serviceRequest.Already_Added_EMC__c = true;
+            serviceRequest.EMC_Component_Item__c = selCompItem;
+            serviceRequest.EMC_Product_Name__c = selCompItemByName;
+            serviceRequest.EMC_Version__c = selCompVersion;
+            serviceRequest.EMC_Product_Version__c = selCompVersionByName;
+            if(ceDetailRec.isMultiple!=null && ceDetailRec.isMultiple){
+                if(ceDEtailREc.isSoftware){
+                    serviceREquest.EMC_Site_ID__c = selSiteID;
+                }
+                else{
+                    serviceRequest.EMC_Serial_Number__c = selSerialNum;
+                }
+            }
+        }
+        else if(isCiscoTask){
+            serviceRequest.Already_Added_Cisco__c = true;
+            serviceRequest.Cisco_Component__c = selCompItem;
+            serviceRequest.Cisco_Version__c = selCompVersion;
+            if(ceDetailRec.isMultiple!=null && ceDetailRec.isMultiple){
+                serviceRequest.Cisco_Serial_Number__c = selSerialNum;
+                if(isSupportedByCisco){
+                    serviceRequest.cisco_contract_ID__c = ceDetailRec.serialNumberToContractMap.get(serviceRequest.Cisco_Serial_Number__c);
+                }
+            }
+            else{
+                if(isSupportedByCisco){
+                    //Assign value to Cisco Serial Number 
+                    serviceRequest.Cisco_Serial_Number__c = ceDetailRec.serialNumber;
+                }
+                //set the contract ID for cisco product
+                serviceRequest.cisco_contract_ID__c = ceDetailRec.contractID;
+            }
+            
+            System.debug('ceDetailRec.serialNumber'+ceDetailRec.serialNumber);
+            System.debug('serviceRequest.Cisco_Serial_Number__c'+serviceRequest.Cisco_Serial_Number__c);
+            if(isSupportedByCisco){
+            
+                serviceRequest.Already_Added_VMware__c = false;
+                if(null != serviceRequest.VMware_Component_Item__c){
+                    serviceRequest.VMware_Component_Item__c = null;               
+                }
+                if(null != serviceRequest.VMware_Version__c){
+                    serviceRequest.VMware_Version__c = null;              
+                }
+                if(null != serviceRequest.VMware_License_Key__c){
+                    serviceRequest.VMware_License_Key__c = null;              
+                }
+                if(null != serviceRequest.VMware_Entity_Responsible_for_Support__c){
+                    serviceRequest.VMware_Entity_Responsible_for_Support__c = null;
+                }
+                if(null != serviceRequest.VMware_License_Expiration_Date__c){
+                    serviceRequest.VMware_License_Expiration_Date__c = null;
+                }
+            }
+        }
+        else if(isVMWareTask){
+            serviceRequest.Already_Added_VMware__c = true;
+            serviceRequest.VMware_Component_Item__c = selCompItem;
+            serviceRequest.VMware_Product_Name__c = selCompItemByName;
+            serviceRequest.VMware_Version__c = selCompVersion;
+            serviceRequest.VMware_Product_Version__c = selCompVersionByName;
+            if(ceDetailRec.isMultiple!=null && ceDetailRec.isMultiple){
+                serviceRequest.VMware_License_Key__c = selSerialNum;
+            }
+        }
+        
+        system.debug('serviceRequest from setproduct from case:'+serviceRequest);
+    }
+    
+    
+    
+    public void setTaskRecordValues(){
+        
+        assignedTo = userinfo.getname(); // Set to Logged in User
+        task.OwnerId = userinfo.getUserId();
+        task.WhoId = serviceRequest.ContactId;
+        task.WhatId = serviceRequest.Id;
+        
+        //if(Apexpages.currentPage().getParameters().get('RecordType').contains(TaskUtils.getTaskRecordTypeId('EMC Task').substring(0,15))){
+        //if(Apexpages.currentPage().getParameters().get('RecordType').contains(TaskUtils.getTaskRecordTypeId(Label.EMCRecordType).substring(0,15))){
+        //    this.task.VCE_Assigned_To__c = label.EMC; // Set VCE_Assigned_To__c to EMC if Record Type passed is EMC Task
+        //    isEMCTask = true;
+        //}
+        //
+        //if(Apexpages.currentPage().getParameters().get('RecordType').contains(TaskUtils.getTaskRecordTypeId(Label.CiscoRecordType).substring(0,15))){
+        //    this.task.VCE_Assigned_To__c = label.Cisco; // Set VCE_Assigned_To__c to Cisco if Record Type passed is Cisco Task
+        //    isCiscoTask = true;
+        //}
+        //
+        //if(Apexpages.currentPage().getParameters().get('RecordType').contains(TaskUtils.getTaskRecordTypeId(Label.VMWareRecordType).substring(0,15))){
+        //    this.task.VCE_Assigned_To__c = label.VMWare; // Set VCE_Assigned_To__c to VMWare if Record Type passed is VMWare Task
+        //    isVMWareTask = true;
+        //}
+        if(null != Apexpages.currentPage().getParameters().get('RecordType')){
+            if(Generic_Validator__c.getAll().ContainsKey(Apexpages.currentPage().getParameters().get('RecordType'))){
+                this.task.VCE_Assigned_To__c = Generic_Validator__c.getAll().get(Apexpages.currentPage().getParameters().get('RecordType')).VCE_Assigned_To__c; 
+            }
+        }
+        if(this.task.VCE_Assigned_To__c == label.EMC){
+            isEMCTask = true;
+        }
+        if(this.task.VCE_Assigned_To__c == label.Cisco){
+            isCiscoTask = true;
+        }
+        if(this.task.VCE_Assigned_To__c == label.VMWare){
+            isVMWareTask = true;
+        }
+        //Set Reminder based on the priority of the Service Request
+        task.IsReminderSet = false;
+        task.ReminderDateTime = system.now();
+        task.Severity__c = serviceRequest.Priority;
+        system.debug('isEMCTask     : '+ isEMCTask);
+        system.debug('isCiscoTask   : '+ isCiscoTask);
+        system.debug('isVMWareTask  : '+ isVMWareTask);
+        system.debug('Apexpages.currentPage().getParameters().get(RecordType) : '+ Apexpages.currentPage().getParameters().get('RecordType'));
+        system.debug('Task : '+ task);
+    }
+    
+    public void setReminder(){
+        
+        system.debug('serviceRequest.Priority: '+serviceRequest.Priority);
+        system.debug('task.ReminderDateTime before:'+task.ReminderDateTime);
+        if(serviceRequest.Priority == 'S1 - Severe problem: Work stopped'){
+            task.ReminderDateTime = system.now().addMinutes(20);
+        }
+        if(serviceRequest.Priority == 'S2 - Major functionality loss'){
+            task.ReminderDateTime = system.now().addMinutes(90);
+        }
+        if(serviceRequest.Priority == 'S3 - Issue has minor customer impact'){
+            task.ReminderDateTime = system.now().addHours(12);
+        }
+        if(serviceRequest.Priority == 'S4 - No production Impact'){
+            task.ReminderDateTime = system.now().addHours(12);
+        }
+        system.debug('task.ReminderDateTime after:'+task.ReminderDateTime);
+        
+    }
+    // Insert caseNote and caseComment in future method, so that it casenote will be shared to B2B after the task creation.
+    
+    @future (callout=true) 
+    public static void insertCaseCommentForPartner(Id TaskId){
+        try{
+            Task t1 = [select id, description, VCE_Assigned_To__c, route_to__c, whatId from task where id =:TaskId];
+            system.debug('t1 Future Method Query'+t1);
+            
+            boolean shareWithEMC = false;
+            boolean shareWithCisco = false;
+            boolean shareWithVMWare = false;
+            
+            if(t1 != null){
+                
+                SystemUtils.CASECOMMENT_TRG_RECURSIVE_CTRL = true;
+                if(t1.VCE_Assigned_To__c == label.EMC){
+                    shareWithEMC = true;
+                }
+                if(t1.VCE_Assigned_To__c == label.Cisco){
+                    shareWithCisco = true;
+                }
+                if(t1.VCE_Assigned_To__c == label.VMWare){
+                    shareWithVMWare = true;
+                }
+                
+                //check from metadata for length of the field?
+                system.debug('t1.description :'+t1.description);
+                string caseCommentString;
+                if(t1.description != null){
+                    if(t1.description.length() > Schema.sObjectType.caseComment.fields.CommentBody.length){
+                        caseCommentString = t1.description.substring(0,Schema.sObjectType.caseComment.fields.CommentBody.length);
+                    }
+                    else {
+                        caseCommentString = t1.description;
+                    }
+                }
+                
+                system.debug('caseCommentString  :'+caseCommentString);
+                
+                CaseComment comment = new CaseComment(  
+                    CommentBody     =   caseCommentString,
+                    IsPublished     =   false,
+                    ParentId        =   t1.whatId);        
+                Insert comment;
+                
+                system.debug('Casecomment from Future Method:'+comment);
+                
+                Case_Note__c caseNote = new Case_Note__c(  
+                    Case_Comment__c             =   comment.Id,
+                    Case__c                     =   t1.whatId,
+                    isVisibleForEMC__c          =   shareWithEMC,
+                    isVisibleForCisco__c        =   shareWithCisco,
+                    isVisibleForVMWare__c       =   shareWithVMWare,
+                    Last_Modifying_Partner__c   =   Label.VCE_LLC,
+                    Note_Comments__c            =   t1.description
+                );      
+                insert caseNote;
+                system.debug('Casenote from Future Method:'+caseNote);
+            }
+        }
+        catch(Exception ex){
+            //system.debug('Exception'+e);
+            //ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,GenericSettingUtil.getGenericSettings('Internal Error').Value__c));
+            SystemUtils.createApexExceptionLog(ex,'PartnerTaskController');
+            System.debug('*** Exception: '+ex +'\n @ : '+ ex.getLineNumber());
+        }
+        
+    }
+    
+    //Loading the collaboration template
+    public void loadCollaborationTemplate(Map<string, String> mapOfFieldsToReplace, String emailTemplateName){
+        
+        EmailTemplate EmailTemplate = [Select Id,Body, HTMLValue,Subject from EmailTemplate WHERE Name = :emailTemplateName];
+        
+        if(EmailTemplate != null){
+            String htmlBody = EmailTemplate.HtmlValue; 
+            String plainBody = EmailTemplate.Body; 
+            
+            for(String key : mapOfFieldsToReplace.keySet()){
+               
+                htmlBody = htmlBody.replace(key, (mapOfFieldsToReplace.get(key) == null) ? '' : mapOfFieldsToReplace.get(key));
+            }
+            
+            task.Description = htmlBody;
+            system.debug('task.Description :'+task.Description);
+        }
+    }
+    
+    public map<String, String> loadMapForCollaborationTemplate(){
+        map<string, string> mapWithFieldsToLoad = new map<string, string>{
+            '{!VCEContact}' => VCEContact,
+                '{!ContactWorkPhone}' => ContactPhone,
+                '{!ContactEmail}' => ContactEmail,
+                '{!CustomerContact}' => CustomerContact,
+                '{!CustomerPhone}' => CustomerPhone,
+                '{!CustomerMobile}' => CustomerMobile,
+                '{!CustomerEmail}' => CustomerEmail,
+                '{!Component_Type}' => selCompTypeByName,
+                '{!Component_Item}' => selCompItemByName,
+                '{!Component_Version}' => selCompVersionByName,
+                '{!AgentTheater}' => AgentTheater,
+                '{!AgentName}' => AgentName,
+                '{!AgentTitle}' => AgentTitle,
+                '{!Comment}' => supportPartnerCollabInfo.Comments__c
+
+                };
+                    
+                    if(task.vce_Assigned_to__c == label.EMC){
+                        
+                        mapWithFieldsToLoad.put('{!Contract_Number}', serviceRequest.EMC_Contract_ID__c);
+                        mapWithFieldsToLoad.put('{!Serial_Number}', serviceRequest.EMC_Serial_Number__c);
+                        mapWithFieldsToLoad.put('{!Site.Id}', serviceRequest.EMC_Site_ID__c);
+                        mapWithFieldsToLoad.put('{!RPA_Serial_ID__c}', serviceRequest.RPA_Serial_ID__c);
+                    }
+        
+        //custom settings -- > approach
+        if(task.Route_To__c == Label.Direct_Dispatch_Upgrade){
+            
+            mapWithFieldsToLoad.put('{!multiComponentUpgradeValue}', supportPartnerCollabInfo.Is_this_part_of_a_multi_component_upgrad__c);
+            mapWithFieldsToLoad.put('{!customerCompanyName}', customerCompanyName);
+            mapWithFieldsToLoad.put('{!Address}', supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c);
+            mapWithFieldsToLoad.put('{!BusinessImpact}', supportPartnerCollabInfo.Business_Impact__c);
+            mapWithFieldsToLoad.put('{!product_If_VNX}', supportPartnerCollabInfo.Product_if_VNX__c);
+            mapWithFieldsToLoad.put('{!CurrentCode}', supportPartnerCollabInfo.Current_Code__c);
+            mapWithFieldsToLoad.put('{!TargetCode}', supportPartnerCollabInfo.Target_Code__c);
+            mapWithFieldsToLoad.put('{!RequestedTargetDate}', string.valueOf(task.Requested_Target_Date_CR__c));
+            mapWithFieldsToLoad.put('{!SpecialInstructions}', supportPartnerCollabInfo.Special_Handling_Instructions__c);
+        }
+        
+        if(task.Route_To__c == null){
+            
+            mapWithFieldsToLoad.put('{!SpecialInstructions}', supportPartnerCollabInfo.Special_Handling_Instructions__c);
+            mapWithFieldsToLoad.put('{!Address}', supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c);
+            mapWithFieldsToLoad.put('{!VCEAccountName}', VCEAccountName);
+            mapWithFieldsToLoad.put('{!BusinessImpact}', supportPartnerCollabInfo.Business_Impact__c);
+            mapWithFieldsToLoad.put('{!LogLocation}', LogLocation);
+            mapWithFieldsToLoad.put('{!vProductsAffected}', vProductsAffected);
+            mapWithFieldsToLoad.put('{!vProblemDescription}', supportPartnerCollabInfo.Problem_Description__c);
+            mapWithFieldsToLoad.put('{!vResultsOfInvestigation}', supportPartnerCollabInfo.Results_of_Investigation__c);
+            mapWithFieldsToLoad.put('{!vVCESystemModel}', vVCESystemModel);
+            mapWithFieldsToLoad.put('{!vVCESRNumber}', vVCESRNumber);
+            mapWithFieldsToLoad.put('{!VCE_System_Serial_Number}', VCE_System_Serial_Number);
+            mapWithFieldsToLoad.put('{!vExpectedDateOfEngagement}', string.valueOf(task.Expected_Date_of_Engagement_CR__c));
+        }
+        
+        if(task.Route_To__c == Label.Direct_Dispatch_Parts){
+            mapWithFieldsToLoad.put('{!VCEAccountName}', VCEAccountName);
+            mapWithFieldsToLoad.put('{!Severity}', task.Severity__c);
+            mapWithFieldsToLoad.put('{!PartType}', supportPartnerCollabInfo.Part_Type__c);
+            mapWithFieldsToLoad.put('{!Summary}', supportPartnerCollabInfo.Summary__c);
+            mapWithFieldsToLoad.put('{!Evidence}', supportPartnerCollabInfo.Evidence__c);
+            mapWithFieldsToLoad.put('{!LogLocation}', LogLocation);
+            mapWithFieldsToLoad.put('{!DefectiveSerialNumber}', supportPartnerCollabInfo.Defective_Serial_Number__c);
+            mapWithFieldsToLoad.put('{!DefectivePartNumber}', supportPartnerCollabInfo.Defective_Part_Number__c);
+            mapWithFieldsToLoad.put('{!PartLocation}', supportPartnerCollabInfo.Part_Location__c);
+            mapWithFieldsToLoad.put('{!ifDriveReadyForReplacement}', supportPartnerCollabInfo.If_drive_ready_for_replacement__c);
+            mapWithFieldsToLoad.put('{!Online}', supportPartnerCollabInfo.Online__c);
+            mapWithFieldsToLoad.put('{!HotSpareInvoked}', supportPartnerCollabInfo.HotSpareInvoked__c);
+            mapWithFieldsToLoad.put('{!ifDriveReadyForReplacement}', supportPartnerCollabInfo.If_drive_ready_for_replacement__c);
+            mapWithFieldsToLoad.put('{!DisruptiveToEnvironment}', supportPartnerCollabInfo.Disruptive_to_environment__c);
+            mapWithFieldsToLoad.put('{!Quantity}', supportPartnerCollabInfo.Quantity__c);
+            mapWithFieldsToLoad.put('{!ContractType}', supportPartnerCollabInfo.ContractType__c);
+        }
+        if(task.Route_To__c == Label.RMA){//Added By Rohit
+             if(Task.CountryRMA__c != null){
+                country__c CountryRMA = [select id, name  from country__c where id =:Task.CountryRMA__c];
+                Task.CountryRMA__r  = new Country__c(Id = CountryRMA.Id, Name = CountryRMA.Name);
+                task.CountryRMA__c = CountryRMA.Id;
+            }
+            
+            if(Task.State_SubdivisionRMA__c != null){
+                State_Subdivision__c State_SubdivisionRMA = [select id, name  from State_Subdivision__c where id =:Task.State_SubdivisionRMA__c];
+                Task.State_SubdivisionRMA__r = new State_Subdivision__c(Id=State_SubdivisionRMA.Id, name=State_SubdivisionRMA.name);
+                Task.State_SubdivisionRMA__c = State_SubdivisionRMA.id;
+            }
+            
+            mapWithFieldsToLoad.put('{!customerCompanyName}', VCEAccountName);
+            mapWithFieldsToLoad.put('{!serviceRequest.Cisco_Component_Name__c}', serviceRequest.Cisco_Component_Name__c);
+            //mapWithFieldsToLoad.put('{!serviceRequest.Part_Number__c}', serviceRequest.Part_Number__c);
+            //mapWithFieldsToLoad.put('{!serviceRequest.Cisco_Component_Location__c}', serviceRequest.Cisco_Component_Location__c);
+            mapWithFieldsToLoad.put('{!VCE_System_Serial_Number}', VCE_System_Serial_Number);
+            mapWithFieldsToLoad.put('{!TIME.Task.Preferred_Date_Time__c}', myDateFormat(Task.Preferred_Date_Time__c));
+            mapWithFieldsToLoad.put('{!DATE.Task.Preferred_Date_Time__c}', string.valueOf(Date.ValueOf(Task.Preferred_Date_Time__c)));
+            mapWithFieldsToLoad.put('{!Task.Site_Address__c}', string.valueOf(Task.Site_Address__c));
+            mapWithFieldsToLoad.put('{!Task.Is_the_site_Manned_or_Unmanned__c}', string.valueOf(Task.Is_the_site_Manned_or_Unmanned__c));
+            mapWithFieldsToLoad.put('{!Task.City__c}', string.valueOf(Task.City__c));
+            mapWithFieldsToLoad.put('{!Task.Is_the_site_accessible_after_5_00_PM__c}', string.valueOf(Task.Is_the_site_accessible_after_5_00_PM__c));
+            
+            mapWithFieldsToLoad.put('{!Task.State_SubdivisionRMA__c}', Task.State_SubdivisionRMA__r.name);
+            
+            mapWithFieldsToLoad.put('{!Task.OK_to_leave_parts_with_security__c}', string.valueOf(Task.OK_to_leave_parts_with_security__c));
+            mapWithFieldsToLoad.put('{!Task.Postal_Code__c}', string.valueOf(Task.Postal_Code__c));
+            mapWithFieldsToLoad.put('{!SpecialInstructions}', supportPartnerCollabInfo.Special_Handling_Instructions__c);
+            mapWithFieldsToLoad.put('{!Task.CountryRMA__c}', Task.CountryRMA__r.name);             
+            
+            mapWithFieldsToLoad.put('{!CustomerContact}', CustomerContact);
+            mapWithFieldsToLoad.put('{!Task.Is_a_Field_Engineer_required_to_install__c}', string.valueOf(Task.Is_a_Field_Engineer_required_to_install__c));
+            mapWithFieldsToLoad.put('{!CustomerPhone}', CustomerPhone);
+            mapWithFieldsToLoad.put('{!Task.Field_Engineer_ID_Text__c}', string.valueOf(Task.Field_Engineer_ID_Text__c));
+            mapWithFieldsToLoad.put('{!CustomerEmail}', CustomerEmail);
+            mapWithFieldsToLoad.put('{!Task.Field_Engineer_Call_Ahead_Text__c}', string.valueOf(Task.Field_Engineer_Call_Ahead_Text__c));
+            mapWithFieldsToLoad.put('{!LogExtract}', supportPartnerCollabInfo.logExtract__c);
+            mapWithFieldsToLoad.put('{!Task.Field_Engineer_Other_Text__c}', string.valueOf(Task.Field_Engineer_Other_Text__c));
+            mapWithFieldsToLoad.put('{!LogLocation}', logLocation);
+            mapWithFieldsToLoad.put('{!FESpecialInstructions}', supportPartnerCollabInfo.FE_Special_Instructions__c);
+            mapWithFieldsToLoad.put('{!AdditionalDetails}', supportPartnerCollabInfo.Additional_Details__c);
+            mapWithFieldsToLoad.put('{!FETimeDate}', string.valueOf(serviceRequest.FETimeDate__c));
+            mapWithFieldsToLoad.put('{!FEAddress}', supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c);
+            mapWithFieldsToLoad.put('{!VCEContact}', VCEContact);
+            mapWithFieldsToLoad.put('{!InputComments}', supportPartnerCollabInfo.Comments__c);            
+        }
+        
+        
+        if(task.vce_Assigned_to__c == label.Cisco){
+            
+            mapWithFieldsToLoad.put('{!Contract_Number}', serviceRequest.Cisco_Contract_ID__c);
+            mapWithFieldsToLoad.put('{!Serial_Number}', serviceRequest.Cisco_Serial_Number__c);
+            mapWithFieldsToLoad.put('{!Cisco_Tech_code}', serviceRequest.Cisco_Tech_Code__c);
+            mapWithFieldsToLoad.put('{!Cisco_Sub_Tech_code}', serviceRequest.Cisco_Sub_Tech_Code__c);
+            mapWithFieldsToLoad.put('{!Cisco_Problem_code}', serviceRequest.Cisco_Problem_Code__c);
+            mapWithFieldsToLoad.put('{!Cisco_CCO_ID__c}', serviceRequest.Cisco_CCO_ID__c);
+        }
+        
+        if(task.vce_Assigned_to__c == label.VMWare){
+            
+            mapWithFieldsToLoad.put('{!Vmware_License_Expiration_Date}', string.valueOf(serviceRequest.Vmware_License_Expiration_Date__c));
+            mapWithFieldsToLoad.put('{!Vmware_License_Key}', serviceRequest.Vmware_License_Key__c);
+            mapWithFieldsToLoad.put('{!Vmware_Entity_Responsible_For_Support}', serviceRequest.Vmware_Entity_Responsible_For_Support__c);
+            mapWithFieldsToLoad.put('{!VMWare_Product_Build}', serviceRequest.VMware_Product_Build__c);
+            mapWithFieldsToLoad.put('{!Affected_Host_Names}', serviceRequest.Affected_Host_Names__c);
+        }
+        
+        
+        return mapWithFieldsToLoad;
+    }
+    //Method to build the product info hierarchy
+    @TestVisible
+    void setProdInfoHierarchy(){
+        List<Component_Type__c> relevantComponentTypeList = new list<Component_Type__c>();                  
+        List<Component_Item__c> relevantComponentItemList = new list<Component_Item__c>();                  
+        List<version__c> relevantComponentVersionList = new list<version__c>(); 
+        if(task.VCE_Assigned_To__c == label.EMC && !VBlockSerialNumberWarning){
+            system.debug('entering the Product Information With Valid VBlock');
+            Set<ID> relevantComponentTypeIDSet = new set<ID>();                 
+            Set<ID> relevantComponentItemIDSet = new set<ID>();                 
+            List<Component_Entitlement__c> componentEntitlementsOnAssocVblock = [Select id, Component_Name__c, Component_Name__r.Component_Type_List__c 
+                                                                                 from Component_Entitlement__c 
+                                                                                 where RecordType.Name = 'EMC Component Entitlement' 
+                                                                                 //where RecordType.Name =: Label.EMCComponentEntitlementRecordType 
+                                                                                 AND Vblock_Entitlement__r.Name=: serviceRequest.Vblock_Serial_Number__c];                 
+            
+            for(Component_Entitlement__c compEntRec : componentEntitlementsOnAssocVblock){                  
+                relevantComponentItemIDSet.add(compEntRec.component_Name__c);                   
+                relevantComponentTypeIDSet.add(compEntRec.Component_Name__r.Component_Type_List__c);                    
+            }
+            relevantComponentTypeList = [Select id, Name from Component_Type__c where ID IN: relevantComponentTypeIDSet ORDER BY Name ASC];                   
+            relevantComponentItemList = [Select id, Name, component_type_list__c from Component_Item__c where ID IN: relevantComponentItemIDSet ORDER BY Name ASC];               
+            relevantComponentVersionList=[Select id,Name, component_item__c from Version__c where Component_Item__c IN:relevantComponentItemIDSet ORDER BY Name ASC];                  
+            servicesProductMap = prodInfoOnCaseHelper.buildProductInfoHeirarchy(relevantComponentTypeList,relevantComponentItemList,relevantComponentVersionList);
+            system.debug('servicesProductMap :'+servicesProductMap);
+        }
+        else{
+            system.debug('entering the Product Information With InValid VBlock');
+            relevantComponentTypeList = prodUtils.queryComponentType('');
+            //relevantComponentItemList = prodUtils.queryComponentItem('');
+            //relevantComponentVersionList = prodUtils.queryVersion('');
+            //servicesProductMap = prodInfoOnCaseHelper.buildProductInfoHeirarchy(relevantComponentTypeList,relevantComponentItemList,relevantComponentVersionList);
+        }
+        compTypeOptions = getPicklistDefaultValuesFromCustomSetting('compTypeOptions');
+        system.debug('## compTypeOptions : '+ compTypeOptions);
+        //compTypeOptions.add(new selectOption('-None-','-None-'));
+        for(Component_Type__c compTypeRec : relevantComponentTypeList){
+            compTypeOptions.add(new selectOption(comptypeRec.id, compTypeRec.Name));
+        }
+        //system.debug('servicesProductMap.size() :'+servicesProductMap.size());
+    }
+    public String myDateFormat(DateTime dt) {
+        String[] parts = dt.format().split(' ');
+        return (parts.size() == 3) ? (parts[1] + ' ' + parts[2]) : parts[1]; 
+    }
+    //OnChange component Type
+    public PageReference onChangeOfComponentType(){
+        system.debug('entering the onChangeOfComponentType');
+        if(selCompType!='-None-'){
+            list<Component_Item__c> relevantComponentItemList;
+            if(task.VCE_Assigned_To__c == label.EMC && !VBlockSerialNumberWarning){
+                System.debug('I am in valid EMC Case');
+                if(servicesProductMap.containsKey(selCompType)){
+                    relevantComponentItemList = servicesProductMap.get(selCompType).assocComponentItemList;
+                }
+                System.debug('relevantComponentItemList====>'+relevantComponentItemList);
+            }
+            else{
+                String componentItemFilter = 'AND Component_Type_List__c=\''+selCompType+'\' ORDER BY Name ASC';
+                relevantComponentItemList = prodUtils.queryComponentItem(componentItemFilter);
+            }
+            if(relevantComponentItemList!=null){
+                relevantCompItemOptions = getPicklistDefaultValuesFromCustomSetting('relevantCompItemOptions');
+                system.debug('## relevantCompItemOptions : '+ relevantCompItemOptions);
+                //elevantCompItemOptions.add(new selectOption('-None-','-None-'));
+                for(Component_Item__c compItemRec : relevantComponentItemList){
+                    relevantCompItemOptions.add(new selectOption(compItemRec.id, compItemRec.Name));
+                }
+            }
+        }
+        return null;
+    }
+    //OnChange component Item
+    public PageReference onChangeOfComponentItem(){
+        isSelEntEMCSoftware = false;
+        if(selCompItem!='-None-'){
+            list<Version__c> relevantComponentVersionList;
+            if(task.VCE_Assigned_To__c == label.EMC && !VBlockSerialNumberWarning){
+                if(servicesProductMap.containsKey(selCompType)){
+                    system.debug('servicesProductMap 1:'+servicesProductMap);
+                    system.debug('selCompType :'+selCompType);
+                    system.debug('selCompItem '+ selCompItem);
+                    Map<Id,list<Version__c>> itemToVersionMap = servicesProductMap.get(selCompType).relevantCompItemToVersionMap;
+                    system.debug('itemToVersionMap :'+itemToVersionMap );
+                    if(itemToVersionMap!=null && itemToVersionMap.containsKey(selCompItem)){
+                        relevantComponentVersionList = itemToVersionMap.get(selCompItem);
+                    }
+                }
+            }
+            else{
+                String componentVersionFilter = 'AND Component_Item__c=\''+selCompItem+'\' ORDER BY Name ASC';
+                relevantComponentVersionList = prodUtils.queryVersion(componentVersionFilter);
+            }
+            if(relevantComponentVersionList!=null){
+                relevantCompVersionOptions = getPicklistDefaultValuesFromCustomSetting('relevantCompVersionOptions');
+                system.debug('## relevantCompVersionOptions : '+ relevantCompVersionOptions);
+                //relevantCompVersionOptions.add(new selectOption('-None-','-None-'));
+                for(Version__c versionRec : relevantComponentVersionList){
+                    relevantCompVersionOptions.add(new selectOption(versionRec.id, versionRec.Name));
+                }
+            }
+            
+            //Start : Added By Rohit
+            if(task.VCE_Assigned_To__c == label.Cisco){                    
+                getComponentDetailsByName();
+                system.debug('### Selected ComponentItem : ' + selCompItem);
+                system.debug('### Selected ComponentItem : ' + selCompItemByName);
+                system.debug('### CustomSetting Records : ' + ComponentItem_Dependent_Field_Values__c.getAll());
+                for(ComponentItem_Dependent_Field_Values__c cItemSetting:ComponentItem_Dependent_Field_Values__c.getall().values()){
+                    if(selCompItemByName.equalsIgnoreCase(cItemSetting.ComponentItem__c)){
+                        disableTechSubTechCode = true;
+                        //nextPage = true;
+                        //initialPage = false;
+                        serviceRequest.Cisco_Tech_Code__c = cItemSetting.Cisco_Technology__c;
+                        serviceRequest.Cisco_Sub_Tech_Code__c = cItemSetting.Cisco_Sub_Technology__c;
+                    }
+                    else{
+                        disableTechSubTechCode = false;
+                    }
+                }
+                setRelevantPbmCodeOptions();
+
+            }
+            //End : Added By Rohit
+            //Now get component Entitlement Information if vblock serial number is valid
+            if(!VBlockSerialNumberWarning){
+                String entitlement;
+                System.debug('I am fetching all relevant component entitlement detail');
+                ceDetailRec = prodInfoOnCaseHelper.getComponentEntitlementDetail(selCompItem);
+                System.debug('ceDetailRec===>'+ceDetailRec);
+                if((ceDetailRec.isSoftware!=null && ceDetailRec.isSoftware) && isEMCTask){
+                    isSelEntEMCSoftware = true;
+                }
+                //set the values on the case for rendering
+                System.debug('$$$$$$$$task.VCE_Assigned_To__c$$$$$$$$'+task.VCE_Assigned_To__c);
+                System.debug('$$$$$$$$isSelEntEMCSoftware$$$$$$$$'+isSelEntEMCSoftware);
+                if(task.VCE_Assigned_To__c == label.EMC){
+                    if(ceDetailRec.isMultiple==null){
+                        if(ceDetailRec.isSoftware){
+                            serviceRequest.EMC_Site_ID__c = ceDetailRec.siteID;
+                            serviceRequest.EMC_Serial_Number__c = '';
+                            serviceRequest.EMC_Contract_ID__c = '';
+                        }else{
+                            serviceRequest.EMC_Serial_Number__c = ceDetailRec.serialNumber;
+                            serviceRequest.EMC_Contract_ID__c = ceDetailRec.contractID;
+                            serviceRequest.EMC_Site_ID__c = '';
+                        }
+                    }
+                    else if(ceDetailRec.isMultiple){
+                        if(ceDetailRec.isSoftware){
+                            if(ceDetailRec.siteIDList!=null && ceDetailRec.siteIDList.size()>0){
+                                entitlement = ceDetailRec.siteIDList.get(0).getValue();
+                            }
+                            serviceRequest.EMC_Site_ID__c = entitlement;
+                        }else{
+                            if(ceDetailRec.serialNumberList!=null && ceDetailRec.serialNumberList.size()>0){
+                                entitlement = ceDetailRec.serialNumberList.get(0).getValue();
+                            }
+                            serviceRequest.EMC_Serial_Number__c = entitlement;
+                            serviceRequest.EMC_Contract_ID__c = ceDetailRec.serialNumberToContractMap.get(serviceRequest.EMC_Serial_Number__c);
+                        }
+                    }
+                    
+                }
+                if(task.VCE_Assigned_To__c == label.Cisco){
+                    if(ceDetailRec.isMultiple==null ){
+                        serviceRequest.Cisco_Serial_Number__c = ceDetailRec.serialNumber;
+                        serviceRequest.Cisco_Contract_ID__c = ceDetailRec.contractID;
+                        System.debug('$$$$$$$$serviceRequest.Cisco_Serial_Number__c$$$$$$$$$$$'+serviceRequest.Cisco_Serial_Number__c);
+                        System.debug('$$$$$$$$serviceRequest.Cisco_Contract_ID__c$$$$$$$$$$$'+serviceRequest.Cisco_Contract_ID__c);
+                    }
+                    else if(ceDetailRec.isMultiple){
+                        if(ceDetailRec.serialNumberList!=null && ceDetailRec.serialNumberList.size()>0){
+                            entitlement = ceDetailRec.serialNumberList.get(0).getValue();
+                        }
+                        serviceRequest.Cisco_Serial_Number__c = entitlement;
+                        serviceRequest.Cisco_Contract_ID__c = ceDetailRec.serialNumberToContractMap.get(serviceRequest.Cisco_Serial_Number__c);
+                    }
+                    ////Start : Added By Rohit
+                    //getComponentDetailsByName();
+                    //system.debug('### Selected ComponentItem : ' + selCompItem);
+                    //system.debug('### Selected ComponentItem : ' + selCompItemByName);
+                    //system.debug('### CustomSetting Records : ' + ComponentItem_Dependent_Field_Values__c.getAll());
+                    //for(ComponentItem_Dependent_Field_Values__c cItemSetting:ComponentItem_Dependent_Field_Values__c.getall().values()){
+                    //    if(selCompItemByName.equalsIgnoreCase(cItemSetting.ComponentItem__c)){
+                    //        disableTechSubTechCode = true;
+                    //        //nextPage = true;
+                    //        //initialPage = false;
+                    //        serviceRequest.Cisco_Tech_Code__c = cItemSetting.Cisco_Technology__c;
+                    //        serviceRequest.Cisco_Sub_Tech_Code__c = cItemSetting.Cisco_Sub_Technology__c;
+                    //    }
+                    //    else{
+                    //        disableTechSubTechCode = false;
+                    //    }
+                    //}
+                    //setRelevantPbmCodeOptions();
+                    ////End : Added By Rohit
+
+                }
+                if(task.VCE_Assigned_To__c == label.VMWare){
+                    if(ceDetailRec.isMultiple==null){
+                        System.debug('In Single entitlement');
+                        serviceRequest.Vmware_License_Key__c = ceDetailRec.serialNumber;
+                        serviceRequest.Vmware_License_Expiration_Date__c = ceDetailRec.licenseExpirationDate;
+                        system.debug('serviceRequest.Vmware_Entity_Responsible_For_Support__c : ' + serviceRequest.Vmware_Entity_Responsible_For_Support__c);
+                        serviceRequest.Vmware_Entity_Responsible_For_Support__c = ceDetailRec.supportedBy;                  
+                    }
+                    else if(ceDetailRec.isMultiple){
+                        System.debug('In Multiple entitlement');
+                        if(ceDetailRec.serialNumberList!=null && ceDetailRec.serialNumberList.size()>0){
+                            entitlement = ceDetailRec.serialNumberList.get(0).getValue();
+                            System.debug('%%%%%%%%%%%entitlement %%%%%%%%'+entitlement);
+                        }
+                        serviceRequest.Vmware_License_Key__c = entitlement;
+                        serviceRequest.Vmware_License_Expiration_Date__c = ceDetailRec.serialNumberToExpirationDateMap.get(entitlement);
+                        serviceRequest.Vmware_Entity_Responsible_For_Support__c = ceDetailRec.serialNumberToSupportedByMap.get(entitlement);
+                        System.debug('After assignment==>'+serviceRequest.Vmware_License_Expiration_Date__c+'===>'+serviceRequest.Vmware_Entity_Responsible_For_Support__c);
+                        
+                    }
+                    system.debug('serviceRequest.Vmware_Entity_Responsible_For_Support__c : ' + serviceRequest.Vmware_Entity_Responsible_For_Support__c);                   
+                    if(serviceRequest.Vmware_Entity_Responsible_For_Support__c == Label.Cisco){
+                        isSupportedByCisco = true;
+                        isSupportedByCiscoMessageDisplay = true;
+                        if(isAlreadyHaveCiscoTask){
+                            infoMessage = Label.CiscoTaskAlreadyExists; 
+                        }
+                        else{
+                            infoMessage = Label.TaskConvertMessage;
+                        }
+                    }   
+                    else{
+                        isSupportedByCisco = false;
+                        isSupportedByCiscoMessageDisplay = false;
+                        infoMessage = '';  
+                    }
+                }            
+            }
+        }
+        system.debug('### Service Request : ' + serviceRequest);
+        return null;
+    }
+    public PageReference onChangeOfSiteID(){
+        serviceRequest.EMC_Site_ID__c = selSiteID;
+        return null;
+    }
+    //OnChange componentSerialNumber
+    public PageReference onChangeOfSerialNumber(){
+        if(ceDetailRec.serialNumberToContractMap!=null && ceDetailRec.serialNumberToContractMap.containsKey(selSerialNum)){
+            System.debug('I am in');
+            if(task.VCE_Assigned_To__c == label.EMC){
+                serviceRequest.EMC_Serial_Number__c = selSerialNum;
+                serviceRequest.EMC_Contract_ID__c = ceDetailRec.serialNumberToContractMap.get(selSerialNum);
+            }
+            if(task.VCE_Assigned_To__c == label.Cisco){
+                serviceRequest.Cisco_Serial_Number__c = selSerialNum;
+                serviceRequest.Cisco_Contract_ID__c = ceDetailRec.serialNumberToContractMap.get(selSerialNum);
+            }
+            if(task.VCE_Assigned_To__c == label.VMWare){
+                serviceRequest.Vmware_License_Key__c = selSerialNum;
+                serviceRequest.Vmware_License_Expiration_Date__c = ceDetailRec.serialNumberToExpirationDateMap.get(selSerialNum);
+                serviceRequest.Vmware_Entity_Responsible_For_Support__c = ceDetailRec.serialNumberToSupportedByMap.get(selSerialNum);              
+                
+                if(serviceRequest.Vmware_Entity_Responsible_For_Support__c == Label.Cisco){
+                    isSupportedByCisco = true;
+                    isSupportedByCiscoMessageDisplay = true;
+                    //infoMessage = Label.TaskConvertMessage;                       
+                    if(isAlreadyHaveCiscoTask){
+                        infoMessage = Label.CiscoTaskAlreadyExists; 
+                    }
+                    else{
+                        infoMessage = Label.TaskConvertMessage;                                                 
+                    }
+                    
+                } 
+                else{
+                    isSupportedByCisco = false;
+                    isSupportedByCiscoMessageDisplay = false;                     
+                    infoMessage = '';  
+                }
+            }
+        }
+        return null;
+        
+    }
+    public List<selectOption> getPicklistDefaultValuesFromCustomSetting(string keyName){
+        List<selectOption> selectOptionList  = new List<selectOption>();
+        for(string str: GenericSettingUtil.getGenericSettingsValues(GenericSettingUtil.getGenericSettings(keyName),'~')){
+            selectOptionList.add(new selectOption(str, str));
+        }
+        return selectOptionList;
+    }
+    @TestVisible 
+    void buildCollaborationRequestData(){
+        
+        multiComponentUpgrade = getPicklistDefaultValuesFromCustomSetting('multiComponentUpgrade');
+        system.debug('## multiComponentUpgrade : '+ multiComponentUpgrade);
+        //multiComponentUpgrade.add(new selectOption('Yes', 'Yes'));
+        //multiComponentUpgrade.add(new selectOption('No', 'No'));
+        
+        online = getPicklistDefaultValuesFromCustomSetting('online');
+        system.debug('## online : '+ online);
+        //online.add(new selectOption('Yes', 'Yes'));
+        //online.add(new selectOption('No', 'No'));
+        
+        ContractType = getPicklistDefaultValuesFromCustomSetting('ContractType');
+        system.debug('## ContractType : '+ ContractType);
+        //ContractType.add(new selectOption('Premium', 'Premium'));
+        //ContractType.add(new selectOption('Other', 'Other'));
+        
+        DisruptiveToEnvironment = getPicklistDefaultValuesFromCustomSetting('DisruptiveToEnvironment');
+        system.debug('## DisruptiveToEnvironment : '+ DisruptiveToEnvironment);
+        //DisruptiveToEnvironment.add(new selectOption('Yes', 'Yes'));
+        //DisruptiveToEnvironment.add(new selectOption('No', 'No'));
+        
+        HotSpareInvoked = getPicklistDefaultValuesFromCustomSetting('HotSpareInvoked');
+        system.debug('## HotSpareInvoked : '+ HotSpareInvoked);
+        //HotSpareInvoked.add(new selectOption('Yes', 'Yes'));
+        //HotSpareInvoked.add(new selectOption('No', 'No'));
+        
+        ifDriveReadyForReplacement = getPicklistDefaultValuesFromCustomSetting('ifDriveReadyForReplacement');
+        system.debug('## ifDriveReadyForReplacement : '+ ifDriveReadyForReplacement);
+        //ifDriveReadyForReplacement.add(new selectOption('Yes', 'Yes'));
+        //ifDriveReadyForReplacement.add(new selectOption('No', 'No'));
+        
+        
+        
+        
+        if(userRecord.containsKey(userinfo.getUserId())){
+            user loggedInUser = userRecord.get(userinfo.getUserId());
+            AgentTheater = loggedInUser.Theater__c;
+            AgentName = loggedInUser.Name;
+            AgentTitle = loggedInUser.title; 
+        }
+        
+        CustomerContact = ServiceRequest.contact.name;
+        CustomerPhone = ServiceRequest.contact.phone;
+        CustomerMobile = ServiceRequest.contact.MobilePhone;
+        CustomerEmail = ServiceRequest.contact.email;
+        
+        
+        if(task.Route_To__c != label.Direct_Dispatch_Upgrade){
+            if(userRecord.containsKey(serviceRequest.OwnerId)){
+                user caseOwner = userRecord.get(serviceRequest.OwnerId);
+                VCEContact = caseOwner.Name;
+                ContactPhone = caseOwner.Phone;
+                ContactEmail = caseOwner.email;
+            }
+        }
+        
+        
+        if(task.Route_To__c == label.Direct_Dispatch_Upgrade){
+            customerCompanyName = serviceRequest.account.name;
+            VCE_System_Serial_Number = serviceRequest.Vblock_Entitlement__r.name;
+            supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c = buildSiteAddress();
+
+            
+            task.Requested_Target_Date_CR__c = system.now().adddays(Integer.ValueOf(GenericSettingUtil.getGenericSettings('RequestedTargetDate').Value__c));                         
+            system.debug('## RequestedTargetDate : '+ RequestedTargetDate);
+            if(ServiceRequest.Vblock_Entitlement__r.Customer_Advocate__c != null){
+                VCEContact = ServiceRequest.Vblock_Entitlement__r.Customer_Advocate__r.name;
+                ContactPhone = ServiceRequest.Vblock_Entitlement__r.Customer_Advocate__r.phone;
+                ContactEmail = ServiceRequest.Vblock_Entitlement__r.Customer_Advocate__r.email;
+            }
+            else
+                if(ServiceRequest.account.Customer_Advocate__c != null){
+                    VCEContact = ServiceRequest.account.Customer_Advocate__r.name;
+                    ContactPhone = ServiceRequest.account.Customer_Advocate__r.phone;
+                    ContactEmail = ServiceRequest.account.Customer_Advocate__r.email;
+                }
+        }
+        
+        if(task.Route_To__c == label.Direct_Dispatch_Parts || task.Route_To__c == null){
+            VCE_System_Serial_Number = serviceRequest.Vblock_Serial_Number__c;
+            VCEAccountName = serviceRequest.account.name;
+            if(ServiceRequest.Vblock_Entitlement__c != null){
+                supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c = buildSiteAddress();
+
+            }
+            LogLocation = ServiceRequest.FTP_Link__c;
+            if(string.isBlank(LogLocation)){
+                LogLocation = 'N/A'; 
+            }
+        }
+        if(task.Route_To__c == Label.RMA){// Added By Rohit: || task.Route_To__c == Label.RMA
+            VCEAccountName = serviceRequest.account.name;
+            VCE_System_Serial_Number = serviceRequest.Vblock_Serial_Number__c;
+            if(null != ServiceRequest.Vblock_Entitlement__c){
+                
+                if(ServiceRequest.Vblock_Entitlement__c != null){
+                    supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c = buildSiteAddress();
+
+                   // Task.City__c = 'N/A';
+                    if(null != ServiceRequest.Vblock_Entitlement__r.Site__c){
+                        if(null != ServiceRequest.Vblock_Entitlement__r.Site__r.Site_Address__c){
+                            Task.Site_Address__c = ServiceRequest.Vblock_Entitlement__r.Site__r.Site_Address__c;                            
+                        }
+                        if(null != ServiceRequest.Vblock_Entitlement__r.Site__r.State_Subdivision__c  &&
+                            null != ServiceRequest.Vblock_Entitlement__r.Site__r.State_Subdivision__r.name){
+                            Task.State_SubdivisionRMA__c = ServiceRequest.Vblock_Entitlement__r.Site__r.State_Subdivision__c;
+                        }
+                        if(null != ServiceRequest.Vblock_Entitlement__r.Site__r.Country__c && 
+                            null != ServiceRequest.Vblock_Entitlement__r.Site__r.Country__r.name){
+                            Task.CountryRMA__c = ServiceRequest.Vblock_Entitlement__r.Site__r.Country__c;
+                        }
+                        if(null != ServiceRequest.Vblock_Entitlement__r.Site__r.Postal_Code__c){
+                            Task.Postal_Code__c =  ServiceRequest.Vblock_Entitlement__r.Site__r.Postal_Code__c;
+                        }                           
+                    }   
+                }               
+            }
+            LogLocation = ServiceRequest.FTP_Link__c;
+            if(string.isBlank(LogLocation)){
+                LogLocation = 'N/A'; 
+            }
+        }
+        if(task.Route_To__c == null){
+            
+            if(null != serviceRequest.Priority){
+                task.Expected_Date_of_Engagement_CR__c = system.now().addMinutes(Integer.ValueOf(GenericSettingUtil.getGenericSettings(string.valueOf(serviceRequest.Priority)).Value__c));              
+            }
+            system.debug('## vExpectedDateOfEngagement : '+ vExpectedDateOfEngagement);
+            supportPartnerCollabInfo.Business_Impact__c = serviceRequest.Impact_to_your_business__c;
+            if(string.isBlank(supportPartnerCollabInfo.Business_Impact__c)){
+                supportPartnerCollabInfo.Business_Impact__c = 'N/A';
+
+
+            }
+            vProductsAffected = selCompItemByName;
+            if(ServiceRequest.Vblock_Entitlement__c != null){
+                vVCESystemModel = ServiceRequest.Vblock_Entitlement__r.Vblock_Item_Formula__c;
+            }
+            
+            vVCESRNumber = serviceRequest.caseNumber;
+        }
+    }
+    @TestVisible 
+    private string buildSiteAddress(){
+        string siteAddress = '';
+        if(ServiceRequest.Vblock_Entitlement__r.Site__r.Site_Address__c != null){
+            siteAddress =  siteAddress + ServiceRequest.Vblock_Entitlement__r.Site__r.Site_Address__c + ' ';
+        }
+        if(ServiceRequest.Vblock_Entitlement__r.Site__r.State_Subdivision__r.name != null){
+            siteAddress =  siteAddress + ServiceRequest.Vblock_Entitlement__r.Site__r.State_Subdivision__r.name + ' ';
+        }
+        if(ServiceRequest.Vblock_Entitlement__r.Site__r.Country__r.name != null){
+            siteAddress =  siteAddress + ServiceRequest.Vblock_Entitlement__r.Site__r.Country__r.name + ' ';
+        }
+        if(ServiceRequest.Vblock_Entitlement__r.Site__r.Postal_Code__c != null){
+            siteAddress =  siteAddress + ServiceRequest.Vblock_Entitlement__r.Site__r.Postal_Code__c;
+        }
+        
+        return siteAddress;
+    }
+    public void validateData(){
+        system.debug('### Inside validateData : SupportPartnerCollabInfo : ' + supportPartnerCollabInfo);
+        if(task.Route_To__c == Label.Direct_Dispatch_Upgrade){
+            if(multiComponentUpgradeValue == 'Yes' && string.isBlank(supportPartnerCollabInfo.Is_this_part_of_a_multi_component_upgrad__c)){
+                proceed = false;
+            } 
+            if(String.IsBlank(multiComponentUpgradeValue)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Product_if_VNX__c) && selCompItemByName.contains('VNX')){
+                proceed = false;
+            } 
+            if(String.IsBlank(VCE_System_Serial_Number)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(VCEContact)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Current_Code__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(ContactPhone)){
+                proceed = false;
+            } 
+            if(String.IsBlank(CustomerMobile)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Target_Code__c)){
+
+                proceed = false;
+            }
+            if(String.IsBlank(ContactEmail)){
+                proceed = false;
+            } 
+            if(String.IsBlank(CustomerContact)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Special_Handling_Instructions__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(CustomerPhone)){
+                proceed = false;
+            } 
+            if(String.IsBlank(CustomerEmail)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Business_Impact__c)){
+
+                proceed = false;
+            }
+            if(String.IsBlank(customerCompanyName)){
+                proceed = false;
+            }
+        }
+        
+        if(task.Route_To__c == Label.Direct_Dispatch_Parts){
+            if(String.IsBlank(VCE_System_Serial_Number)){
+                proceed = false;
+            } 
+            if(String.IsBlank(VCEAccountName)){
+                proceed = false;
+            }
+            if(String.IsBlank(VCEContact)){
+                proceed = false;
+            } 
+            if(String.IsBlank(ContactEmail)){
+                proceed = false;
+            } 
+            if(String.IsBlank(CustomerContact)){
+                proceed = false;
+            } 
+            if(String.IsBlank(ContactPhone)){
+                proceed = false;
+            } 
+            if(String.IsBlank(CustomerMobile)){
+                proceed = false;
+            } 
+            if(String.IsBlank(CustomerPhone)){
+                proceed = false;
+            } 
+            if(String.IsBlank(CustomerEmail)){
+                proceed = false;
+            } 
+            if(String.IsBlank(VCEAccountName)){
+                proceed = false;
+            }
+            if(String.IsBlank(supportPartnerCollabInfo.Summary__c)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Evidence__c)){
+                proceed = false;
+            } 
+            if(String.IsBlank(LogLocation)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Part_Type__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Defective_Serial_Number__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Defective_Part_Number__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Part_Location__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Quantity__c)){
+                proceed = false;
+            }
+            if(String.IsBlank(supportPartnerCollabInfo.Online__c)){
+
+                proceed = false;
+            }
+            if(String.IsBlank(supportPartnerCollabInfo.Disruptive_to_environment__c)){
+
+                proceed = false;
+            }
+            if(String.IsBlank(supportPartnerCollabInfo.HotSpareInvoked__c)){
+
+                proceed = false;
+            }     
+            if(String.IsBlank(supportPartnerCollabInfo.If_drive_ready_for_replacement__c)){
+
+                proceed = false;
+            }
+            
+        }         
+        if(task.Route_To__c == null){
+            if(String.IsBlank(VCEAccountName)){
+                proceed = false;
+            }
+            if(String.IsBlank(vProductsAffected)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Problem_Description__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(LogLocation)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Results_of_Investigation__c)){
+
+                proceed = false;
+            } 
+            
+            if(String.IsBlank(vVCESystemModel)){
+                proceed = false;
+            } 
+            if(String.IsBlank(vVCESRNumber)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c)){
+
+                proceed = false;
+            } 
+            if(String.IsBlank(ContactPhone)){
+                proceed = false;
+            } 
+            if(String.IsBlank(VCEContact)){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Business_Impact__c)){
+
+                proceed = false;
+            }
+            if(String.IsBlank(ContactEmail) && task.VCE_Assigned_To__c != label.VMWare){
+                proceed = false;
+            } 
+            if(String.IsBlank(supportPartnerCollabInfo.Special_Handling_Instructions__c)){                
+
+                proceed = false;
+            } 
+           
+            if(String.IsBlank(VCE_System_Serial_Number)){
+                proceed = false;
+            } 
+        }
+        if(task.Route_To__c == Label.RMA){
+           
+            if(String.IsBlank(task.Is_the_site_Manned_or_Unmanned__c)){
+                proceed = false;
+            } 
+            if(String.IsBlank(task.Is_the_site_accessible_after_5_00_PM__c)){
+                proceed = false;
+            } 
+            
+            if(String.IsBlank(task.OK_to_leave_parts_with_security__c)){
+                proceed = false;
+            }
+           
+            if(String.IsBlank(task.CountryRMA__c)){
+                proceed = false;
+            }
+            if(String.IsBlank(task.State_SubdivisionRMA__c)){
+                proceed = false;
+            }
+            if(String.IsBlank(task.Is_a_Field_Engineer_required_to_install__c)){
+                proceed = false;
+            } 
+           
+           
+                        
+        }       
+    }
+}
