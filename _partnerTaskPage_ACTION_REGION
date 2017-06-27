@@ -1,0 +1,1446 @@
+<apex:page standardcontroller="Task" extensions="PartnerTaskController" tabStyle="Task" id="pg" docType="html-5.0">
+    <style>
+        .comboboxIcon{
+        display: none;
+        }
+        .apexp .bPageBlock.apexDefaultPageBlock .pbBody .pbSubheader h3 {
+        font-size: 1.1em;
+        color: black;
+        }
+        .textAreaClass{
+        width: 392px; 
+        height: 25px;
+        }
+        .textAreaComments{
+        width: 392px; 
+        height: 48px;
+        }
+    </style>
+    
+    <apex:includeScript value="{!$Resource.jQuerylatestV1}"/>
+    <script type="text/javascript">
+    
+    function setTabTitle() {
+        sforce.console.setTabTitle('New Task');
+    }     
+    
+    
+    var previousOnload = window.onload; 
+    var selTechCode;
+    window.onload = function() {
+        $j = jQuery.noConflict();
+        selTechCode = $j('[id$="techCodeSelList"]').val();
+        $j("select[id$='VCEAssignedToid']").attr("disabled",true);
+        $j('[id$=multiComponentUpgradeDiv]').hide();
+        $j('[id$=multiComponentUpgradeText]').val("");
+        setRequiredAttribute();
+        hideFEFieldsForRMA();
+        
+        if (previousOnload) {
+            previousOnload();
+        }               
+        setTimeout('setTabTitle()', '500');
+    }
+    
+    function hideFEFieldsForRMAOnChange(thisValue){
+        if(thisValue.value == 'No' || thisValue.value == ''){
+            hideFEFieldsForRMA();
+        }
+        if(thisValue.value == 'Yes'){
+            showFEFieldsForRMA();
+        }
+    }
+    
+    function hideFEFieldsForRMA(){
+        $j('[id$=Field_Engineer_ID_Text]').hide();    
+        $j('[id$=Field_Engineer_ID_Text_Div]').hide();
+        $j('[id$=Field_Engineer_ID_Text_Value]').val("");
+        $j('[id$=Field_Engineer_Call_Ahead_Text]').hide();    
+        $j('[id$=Field_Engineer_Call_Ahead_Text_Div]').hide();
+        $j('[id$=Field_Engineer_Call_Ahead_Text_Value]').val("");
+        $j('[id$=Field_Engineer_Other_Text]').hide();    
+        $j('[id$=Field_Engineer_Other_Text_Div]').hide();
+        $j('[id$=Field_Engineer_Other_Text_Value]').val("");
+        $j('[id$=FESpecialInstructionsText]').hide();    
+        $j('[id$=FESpecialInstructionsDiv]').hide();
+        $j('[id$=FESpecialInstructionsValue]').val("");
+        $j('[id$=AddressText]').hide(); 
+        $j('[id$=AddressDiv]').hide(); 
+        $j('[id$=AddressValue]').val("");
+        $j('[id$=FETimeDateText]').hide();    
+        $j('[id$=FETimeDateDiv]').hide();
+        $j('[id$=FETimeDateValue]').val("");
+        $j('[id$=VCEContactText]').hide();    
+        $j('[id$=VCEContactDiv]').hide();
+        $j('[id$=VCEContactValue]').val("");
+    }
+    
+    function showFEFieldsForRMA(){
+        $j('[id$=Field_Engineer_ID_Text]').show();    
+        $j('[id$=Field_Engineer_ID_Text_Div]').show();
+        $j('[id$=Field_Engineer_Call_Ahead_Text]').show();    
+        $j('[id$=Field_Engineer_Call_Ahead_Text_Div]').show();
+        $j('[id$=Field_Engineer_Other_Text]').show();    
+        $j('[id$=Field_Engineer_Other_Text_Div]').show();
+        $j('[id$=FESpecialInstructionsText]').show();    
+        $j('[id$=FESpecialInstructionsDiv]').show();
+        $j('[id$=AddressText]').show(); 
+        $j('[id$=AddressDiv]').show(); 
+        $j('[id$=FETimeDateText]').show();    
+        $j('[id$=FETimeDateDiv]').show();
+        $j('[id$=VCEContactText]').show();    
+        $j('[id$=VCEContactDiv]').show();
+    }
+    
+    function setRequiredAttribute(){
+        console.log('setRequiredAttribute');
+        
+        $j("[id$=Route_To_Blank] input[type=text], [id$=Route_To_Blank] .textAreaClass").each(function(){
+            
+            $j(this).prop('required', true);
+        });
+        
+        $j("[id$=TimetableAction] input[type=text], [id$=TimetableAction] .textAreaClass").each(function(){
+            
+            $j(this).prop('required', true);
+        });
+        
+        $j("[id$=Route_To_RMA] input[type=text], [id$=Route_To_RMA] .textAreaClass, [id$=Route_To_RMA] select")
+        .not("[id$=VCEContactValue], [id$=additionalDetailsId], [id$=Field_Engineer_Other_Text_Value], [id$=Field_Engineer_ID_Text_Value], [id$=Field_Engineer_Call_Ahead_Text_Value], [id$=FESpecialInstructionsValue], [id$=FETimeDateValue], [id$=AddressValue]")    
+        .each(function(){
+            
+            $j(this).prop('required', true);
+        });
+        
+        $j("[id$=Direct_Dispatch_Parts] input[type=text], [id$=Direct_Dispatch_Parts] select, [id$=Direct_Dispatch_Parts] .textAreaClass").each(function(){
+            
+            $j(this).prop('required', true);
+        });
+        
+        $j("[id$=Direct_Dispatch_Upgrade] input[type=text], [id$=Direct_Dispatch_Upgrade] select, [id$=Direct_Dispatch_Upgrade] .textAreaClass").not("[id$=productIfVNX], [id$=multiComponentUpgradeText]").each(function(){
+            
+            $j(this).prop('required', true);
+        });
+    }
+    //this function is called from collaboration request section
+    function HideFreeFormField(thisValue){
+        
+        console.log('HideFreeFormField');
+        if(thisValue.value == 'No' || thisValue.value == ''){
+            $j('[id$=multiComponentUpgradeDiv]').hide();
+            $j('[id$=multiComponentUpgradeText]').val("");
+            $j('[id$=multiComponentUpgradeText]').prop("required", false);
+        }   
+        if(thisValue.value == 'Yes'){
+            $j('[id$=multiComponentUpgradeDiv]').show();
+            $j('[id$=multiComponentUpgradeText]').prop("required", true);
+            
+        } 
+        
+    }
+    </script>
+    
+    
+    
+    <style>
+        .requiredBlock{
+        color:#CC0000;
+        font-weight:bold;
+        font-size:20px;
+        margin-right:0.25px;
+        }
+    </style>
+    <apex:outputPanel id="jsFunctions">
+        <script type="text/javascript">
+        <apex:includeScript value="/support/console/24.0/integration.js"/> 
+        <apex:includeScript value="{!$Resource.subTabClose}"/> 
+        
+        function postCompleteProcessing(){
+            console.log('postCompleteProcessing');
+            setRequiredAttribute();
+            
+             if($j('[id$=multiComponentUpgrade]').val() == 'No' || $j('[id$=multiComponentUpgrade]').val() == ''){
+                $j('[id$=multiComponentUpgradeDiv]').hide();
+                $j('[id$=multiComponentUpgradeText]').prop("required", false);
+            }
+            if($j('[id$=multiComponentUpgrade]').val() == 'Yes'){
+                $j('[id$=multiComponentUpgradeText]').prop("required", true);
+            }
+            
+            if($j('[id$=idInstallRequired]').val() == 'No' || $j('[id$=idInstallRequired]').val() == ''){
+                hideFEFieldsForRMA();
+            }
+            return false;
+        }
+        
+        
+        </script>
+        
+    </apex:outputPanel>
+    
+    <apex:sectionHeader title="Task" subtitle="New Task"/>  
+    <apex:pageMessages id="ErrorMessages"/>
+    <apex:pageMessage rendered="{!VBlockSerialNumberWarning}" summary="{!$Label.InvalidVBlockSerialNumber}" severity="Warning" strength="3"/> 
+    <apex:pageMessage rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}" summary="{!$Label.TSR_Info_DispatchParts}" severity="info" escape="false"/>
+    <apex:pageMessage rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Upgrade}" summary="{!$Label.TSR_Info_CodeUpgrade}" severity="info"  escape="false"/>
+    <apex:form id="formId">
+        
+        <!--  <apex:actionFunction reRender="ErrorMessages, formId" name="doSave" action="{!save}"/>  -->
+        <apex:outputPanel id="idInfoPNL">
+            <apex:pageMessage id="idMessageSupportedByCisco" rendered="{!isSupportedByCiscoMessageDisplay}" summary="{!infoMessage}" severity="Info" strength="3"/>
+        </apex:outputPanel>
+        <apex:outputPanel id="hiddenerror">
+            <apex:inputHidden value="{!errorValue}" id="hiddenerrval" />
+        </apex:outputPanel>
+        <apex:outputPanel id="descriptionLength">
+            <apex:inputHidden value="{!descriptionLength}" id="descriptionLengthid" />
+        </apex:outputPanel>
+        <apex:pageBlock title="Task Edit" id="pageBlockId">
+            <apex:pageBlockButtons location="both">
+                <apex:commandButton id="Preview" value="Preview" action="{!Preview}" reRender="CollaborationRequest, descriptionLength, ErrorMessages" rendered="{!nextPage}"/>
+                <apex:commandButton reRender="jsFunctions, ErrorMessages, formId" value="Save" action="{!save}" oncomplete="var len = saveClose('ErrorMessages'); if(len > 0){postCompleteProcessing()};" rendered="{!nextPage}"/>
+                <apex:commandButton id="Continue" value="Continue" action="{!next}" rendered="{!!nextPage}"/>
+                <apex:commandButton value="Cancel" immediate="true" action="{!cancel}" html-formnovalidate="formnovalidate" onclick="return closeWin();"/>              
+            </apex:pageBlockButtons>
+            
+            
+            <apex:pageBlockSection title="Task Information"  columns="2" collapsible="false">
+                
+                <apex:inputField id="VCEAssignedToid" value="{!task.VCE_Assigned_To__c}"  rendered="{!!nextPage}"/>
+                <apex:outputfield id="VCEAssignedToValue" value="{!task.VCE_Assigned_To__c}" rendered="{!nextPage}"/>
+                
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Assigned To" />
+                    <apex:outputtext label="Assigned To" value="{!assignedTo}" />
+                </apex:pageblockSectionItem>
+                
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Route To"/>
+                    <apex:actionRegion >
+                        <apex:inputField value="{!task.Route_To__c}" rendered="{!!nextPage}">
+                            <apex:actionSupport event="onchange" reRender="Cisco_Component_Name_Label, Cisco_Component_Name, Cisco_Component_Location_Label, Cisco_Component_Location, Part_Number_Label, part_number, EMCRPCSerialIdLbl, EMCRPCSerialId, EMCPartsDirectDispatchTask, CiscoRMATask"/>
+                        </apex:inputField>
+                        <apex:outputfield id="Route_To_Value_Id" value="{!task.Route_To__c}" rendered="{!nextPage}"/>
+                    </apex:actionRegion>
+                </apex:pageblockSectionItem>
+                
+                
+                <apex:inputField value="{!task.Priority}" rendered="{!!nextPage}"/>
+                <apex:outputField value="{!task.Priority}" rendered="{!nextPage}"/>
+                
+                <apex:outputField value="{!task.whatId}" />
+                
+                <apex:Inputfield value="{!task.Status}" rendered="{!!nextPage}"/>
+                <apex:outputField value="{!task.Status}" rendered="{!nextPage}"/>
+                
+                <apex:pageblockSectionItem >
+                    <apex:outputLabel value="Subject" rendered="{!nextPage}" />
+                    <apex:inputField required="true" value="{!task.subject}" style="width:500px;" rendered="{!nextPage}"/>
+                </apex:pageblockSectionItem>
+                
+                <apex:outputField value="{!task.Severity__c}" />
+                
+                <apex:pageBlockSectionItem />
+                <apex:pageBlockSectionItem />
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection title="Product Information">
+                
+                <!--------------- Editable Component Type Section --------------->
+                <apex:pageBlockSectionItem rendered="{!!nextPage}">
+                    <apex:outputText value="Component Type" />
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                        <apex:actionRegion >
+                            <apex:selectList value="{!selCompType}" size="1" multiselect="false">
+                                <apex:selectOptions value="{!compTypeOptions}" />
+                                <apex:actionSupport event="onchange" action="{!onChangeOfComponentType}" rerender="compItemSelect,idTechCodePNL,idSubTechCodePNL" />
+                            </apex:selectList>
+                        </apex:actionRegion>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <!--------------- Display Only Component Type Section --------------->
+                <apex:pageblockSectionItem rendered="{!nextPage}">
+                    <apex:outputLabel value="Component Type" />
+                    <apex:outputtext label="selCompTypeByName" value="{!selCompTypeByName}" />
+                </apex:pageblockSectionItem>
+                
+                <!--------------- Editable Serial Number Section --------------->
+                <apex:pageBlockSectionItem rendered="{!!nextPage}">
+                    <apex:outputPanel id="assocCompSerialNumberLbl">
+                        <apex:outputText value="Serial Number" rendered="{!((isCiscoTask) || (isEMCTask && !isSelEntEMCSoftware))}"/>
+                        <apex:outputText value="License Key" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="assocCompSerialNumber">
+                        <apex:outputText value="{!ceDetailRec.serialNumber}" rendered="{!(!ceDetailRec.isMultiple && !isSelEntEMCSoftware)}"/>
+                        <apex:actionRegion >
+                            <apex:selectList value="{!selSerialNum}" rendered="{!(ceDetailRec.isMultiple && !isSelEntEMCSoftware)}" size="1">
+                                <apex:actionSupport event="onchange" rerender="contractId, expDt, supportedBy, idMessageSupportedByCisco, idInfoPNL" action="{!onChangeOfSerialNumber}"/>
+                                <apex:selectOptions value="{!ceDetailRec.serialNumberList}" />
+                            </apex:selectList>
+                        </apex:actionRegion>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                
+                <!--------------- Display Only Serial Number Section --------------->
+                <apex:pageBlockSectionItem rendered="{!nextPage}">
+                    <apex:outputPanel id="assocCompSerialNumberLblDisplay">
+                        <apex:outputText value="Serial Number" rendered="{!((isCiscoTask) || (isEMCTask && !isSelEntEMCSoftware))}"/>
+                        <apex:outputText value="License Key" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="assocCompSerialNumberDisplay" rendered="{!!(isSelEntEMCSoftware)}">
+                        <apex:outputText value="{!serviceRequest.EMC_Serial_Number__c}" rendered="{!isEMCTask}"/>
+                        <apex:outputText value="{!serviceRequest.Cisco_Serial_Number__c}" rendered="{!isCiscoTask}"/>
+                        <apex:outputText value="{!serviceRequest.VMware_License_Key__c}" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                
+                <!--------------- Editable Component Item Section --------------->
+                <apex:pageBlockSectionItem rendered="{!!nextPage}">
+                    <apex:outputText value="Component Item" />
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                        <apex:actionRegion >
+                            <apex:selectList value="{!selCompItem}" size="1" multiselect="false" id="compItemSelect">
+                                <apex:selectOptions value="{!relevantCompItemOptions}" />
+                                <apex:actionSupport event="onchange" action="{!onChangeOfComponentItem}" 
+                                    rerender="MiscEntInfoLbl,contractIdLbl, contractId, ciscoConID, emcConID,assocCompSerialNumberLbl, 
+                                    MiscEntInfo,assocCompSerialNumber,expDt,supportedBy,idMessageSupportedByCisco,idInfoPNL,compVersionOptions,
+                                    idTechCodePNL,idSubTechCodePNL,idOPProblemCode" /> <!--Added By Rohit : idTechCodePNL,idSubTechCodePNL -->
+                            </apex:selectList>
+                        </apex:actionRegion>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <!--------------- Display Only Component Item Section --------------->
+                <apex:pageblockSectionItem rendered="{!nextPage}">
+                    <apex:outputLabel value="Component Item" />
+                    <apex:outputtext label="Component Item" value="{!selCompItemByName}" />
+                </apex:pageblockSectionItem>
+                
+                
+                <apex:pageBlockSectionItem >  
+                    <apex:outputPanel id="contractIdLbl">
+                        <apex:outputText value="Contract Number"  rendered="{!((isCiscoTask) || (isEMCTask && !isSelEntEMCSoftware))}"/>
+                        <apex:outputText value="License Expiration Date" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel> 
+                    <apex:outputPanel id="contractId">
+                        <apex:outputText value="{!serviceRequest.Cisco_Contract_ID__c}" rendered="{!isCiscoTask}" id="ciscoConID"/>
+                        <apex:outputText value="{!serviceRequest.EMC_Contract_ID__c}" rendered="{!(isEMCTask && !isSelEntEMCSoftware)}" id="emcConID"/>
+                        <apex:outputText value="{!serviceRequest.VMware_License_Expiration_Date__c}" rendered="{!isVMWareTask}" id="expDt"/>
+                    </apex:outputPanel>          
+                </apex:pageBlockSectionItem>
+                
+                
+                <apex:pageBlockSectionItem rendered="{!!nextPage}">
+                    <apex:outputText value="Component Version" />
+                    <apex:outputPanel styleClass="requiredInput" layout="block">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                        <apex:actionRegion >
+                            <apex:selectList value="{!selCompVersion}" size="1" multiselect="false" id="compVersionOptions">
+                                <apex:selectOptions value="{!relevantCompVersionOptions}" />
+                            </apex:selectList>
+                        </apex:actionRegion>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                <apex:pageblockSectionItem rendered="{!nextPage}">
+                    <apex:outputLabel value="Component Version" />
+                    <apex:outputtext label="Component Version" value="{!selCompVersionByName}" />
+                </apex:pageblockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!!nextPage}">
+                    <apex:outputPanel id="MiscEntInfoLbl">
+                        <apex:outputText value="Site ID" rendered="{!isSelEntEMCSoftware}"/>
+                        <apex:outputText value="CCO ID" rendered="{!isCiscoTask}"/>
+                        <apex:outputText value="Supported By" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="MiscEntInfo">
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField required="true" value="{!serviceRequest.Cisco_CCO_ID__c}" rendered="{!isCiscoTask}"/>                          
+                        </apex:outputPanel>
+                        <apex:outputText value="{!ceDetailRec.siteID}" rendered="{!(isSelEntEMCSoftware && NOT(ceDetailRec.isMultiple))}"/> 
+                        <apex:actionRegion >
+                            <apex:selectList value="{!selSiteID}" rendered="{!(isSelEntEMCSoftware && ceDetailRec.isMultiple)}" size="1">
+                                <apex:actionSupport event="onchange" action="{!onChangeOfSiteID}"/>
+                                <apex:selectOptions value="{!ceDetailRec.siteIDList}" />
+                            </apex:selectList>
+                        </apex:actionRegion>
+                        <apex:outputField value="{!serviceRequest.VMware_Entity_Responsible_for_Support__c}" id="supportedBy" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!nextPage}">
+                    <apex:outputPanel id="MiscEntInfoLbl">
+                        <apex:outputText value="Site ID" rendered="{!isSelEntEMCSoftware}"/>
+                        <apex:outputText value="CCO ID" rendered="{!isCiscoTask}"/>
+                        <apex:outputText value="Supported By" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="MiscEntInfo">
+                        <apex:outputField value="{!serviceRequest.Cisco_CCO_ID__c}" rendered="{!isCiscoTask}"/>
+                        <apex:outputText value="{!serviceRequest.EMC_Site_ID__c}" rendered="{!isSelEntEMCSoftware}"/>
+                        <apex:outputField value="{!serviceRequest.VMware_Entity_Responsible_for_Support__c}" id="supportedBy" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!isEMCTask}">
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem rendered="{!isEMCTask && !nextPage}">
+                    <apex:outputPanel id="EMCRPCSerialIdLbl" >
+                        <apex:outputText value="RPA Serial Id" rendered="{!isEMCTask && task.Route_To__c == null}"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="EMCRPCSerialId" >
+                        <apex:inputField value="{!serviceRequest.RPA_Serial_ID__c}" rendered="{!isEMCTask && task.Route_To__c == null}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputField value="{!serviceRequest.RPA_Serial_ID__c}" rendered="{!isEMCTask && nextPage && task.Route_To__c == null}"/>
+                
+                <!------------------------------Cisco Additional Product Information------------------------>
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <apex:outputText value="Technology Code" rendered="{!isCiscoTask}"/>
+                        <apex:outputText value="VMware Product Build" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel styleClass="requiredInput" layout="block" id="idTechCodePNL"> <!--Added By Rohit : id="idTechCodePNL"-->
+                        <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!(initialPage && isCiscoTask)}"/>
+                        <apex:selectList rendered="{!((initialPage && isCiscoTask) && NOT(disableTechSubTechCode))}" id="techCodeSelList" value="{!serviceRequest.Cisco_Tech_Code__c}" size="1" multiselect="false"> <!--Updated By Rohit: rendered="{!((initialPage && isCiscoTask) && NOT(disableTechSubTechCode))}"-->
+                            <apex:actionSupport event="onchange" action="{!setRelevantsubTechCodeOptions}" reRender="subTechCodeSelList, pbmCodeSelList"/>
+                            <apex:selectOptions value="{!availTechCodeOptions}" />
+                        </apex:selectList>
+                        <apex:outputField value="{!serviceRequest.Cisco_Tech_Code__c}" rendered="{!((nextPage && isCiscoTask) || disableTechSubTechCode)}"/> <!--  Updated By Rohit: rendered="{!((nextPage && isCiscoTask) || disableTechSubTechCode)}" -->
+                        
+                        <apex:inputField value="{!serviceRequest.VMware_Product_Build__c}" rendered="{!(initialPage && isVMWareTask)}"/>
+                        <apex:OutputField value="{!serviceRequest.VMware_Product_Build__c}" rendered="{!(nextPage && isVMWareTask)}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel id="Cisco_Component_Name_Label">
+                        <apex:outputText value="Detailed Component Name, Serial #, Part ID/#, and Location" rendered="{!isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c}"/>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel styleClass="requiredInput" layout="block" id="Cisco_Component_Name">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!(initialPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                        <apex:inputField required="true" value="{!serviceRequest.Cisco_Component_Name__c}" rendered="{!(initialPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                        <apex:outputField value="{!serviceRequest.Cisco_Component_Name__c}" rendered="{!(nextPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputPanel >
+                        <apex:outputText value="Sub Technology Code" rendered="{!isCiscoTask}"/>
+                        <apex:outputText value="Affected Host Names" rendered="{!isVMWareTask}"/>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel styleClass="requiredInput" layout="block" id="idSubTechCodePNL"> <!--Added By Rohit: id="idSubTechCodePNL"-->
+                        <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!(initialPage && isCiscoTask)}"/>
+                        <apex:selectList rendered="{!((initialPage && isCiscoTask) && NOT(disableTechSubTechCode))}" id="subTechCodeSelList" value="{!serviceRequest.Cisco_Sub_Tech_Code__c}" size="1" multiselect="false"> <!--Updated By Rohit: rendered="{!((initialPage && isCiscoTask) && NOT(disableTechSubTechCode))}"-->
+                            <apex:actionSupport event="onchange" action="{!setRelevantPbmCodeOptions}" reRender="pbmCodeSelList"/>
+                            <apex:selectOptions value="{!relevantsubTechCodeOptions}" />
+                        </apex:selectList>
+                        <apex:outputField value="{!serviceRequest.Cisco_Sub_Tech_Code__c}" rendered="{!((nextPage && isCiscoTask)  || disableTechSubTechCode)}"/> <!-- Updated By Rohit: rendered="{!((nextPage && isCiscoTask)  || disableTechSubTechCode)}" -->
+                        <apex:inputField value="{!serviceRequest.Affected_Host_Names__c}" rendered="{!(initialPage && isVMWareTask)}"/>
+                        <apex:OutputField value="{!serviceRequest.Affected_Host_Names__c}" rendered="{!(nextPage && isVMWareTask)}"/>
+                    </apex:outputPanel>
+                    
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem />
+                
+          <!--      <apex:pageBlockSectionItem >
+                    <apex:outputPanel id="Cisco_Component_Location_Label">
+                        <apex:outputText value="Component Location" rendered="{!isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c}"/>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel styleClass="requiredInput" layout="block" id="Cisco_Component_Location">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!(initialPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                        <apex:inputField required="true" value="{!serviceRequest.Cisco_Component_Location__c}" rendered="{!(initialPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                        <apex:outputField value="{!serviceRequest.Cisco_Component_Location__c}" rendered="{!(nextPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem> -->
+                
+                <apex:pageBlockSectionItem rendered="{!(isCiscoTask)}">
+                    <apex:outputText value="Problem Code" />
+                    <apex:outputPanel styleClass="requiredInput" layout="block" id="idOPProblemCode">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!(initialPage && isCiscoTask)}"/>
+                        <apex:selectList rendered="{!(initialPage && isCiscoTask)}" id="pbmCodeSelList" value="{!serviceRequest.Cisco_Problem_Code__c}" size="1" multiselect="false">
+                            <apex:selectOptions value="{!relevantPbmCodeOptions}" />
+                        </apex:selectList>
+                        <apex:outputField value="{!serviceRequest.Cisco_Problem_Code__c}" rendered="{!(nextPage && isCiscoTask)}"/>
+                    </apex:outputPanel>
+                    
+                </apex:pageBlockSectionItem>
+                
+              <!--  <apex:pageBlockSectionItem >
+                    <apex:outputPanel id="Part_Number_Label">
+                        <apex:outputText value="Part Number" rendered="{!isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c}"/>
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel styleClass="requiredInput" layout="block" id="part_number">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!(initialPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                        <apex:inputField required="true" value="{!serviceRequest.Part_Number__c}" rendered="{!(initialPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                        <apex:outputField value="{!serviceRequest.Part_Number__c}" rendered="{!(nextPage && isCiscoTask && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c)}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem> -->
+                
+            </apex:pageBlockSection>
+            
+            
+            <!--------------------------------Direct Dispatch Upgrade Section-------------------------------------------------->
+            <apex:outputPanel id="Direct_Dispatch_Upgrade_Sction">
+                <apex:pageBlockSection id="Direct_Dispatch_Upgrade" collapsible="false" title="Collaboration Request" columns="2" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Upgrade}">
+                    <apex:pageBlockSectionItem > 
+                        <span class="pbSubExtra"><span class="requiredLegend"><span class="requiredExampleOuter">
+                            <span class="requiredExample">&nbsp;</span></span><span class="requiredMark">*</span>
+                            <span  class="requiredText"> = Required information 
+                            </span>
+                            </span>
+                        </span> 
+                    </apex:pageBlockSectionItem> 
+                    <apex:pageBlockSectionItem rendered="{!nextPage}"/> 
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Customer Company Name"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!customerCompanyName}" maxlength="255"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Is this part of a multi-component upgrade?" />
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!nextPage}"/>
+                            <apex:selectList rendered="{!nextPage}" id="multiComponentUpgrade" onchange="HideFreeFormField(this);" value="{!multiComponentUpgradeValue}" size="1" multiselect="false">
+                                <apex:selectOptions value="{!multiComponentUpgrade}" />
+                            </apex:selectList>
+                            <div id="multiComponentUpgradeDiv" style="width: 80%; float: right; display: inline;">
+                                <apex:inputText value="{!supportPartnerCollabInfo.Is_this_part_of_a_multi_component_upgrad__c}" maxlength="255" id="multiComponentUpgradeText"/>                                                     
+                            </div>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem > 
+                        <apex:outputText value="VCE System Serial Number "/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!VCE_System_Serial_Number}"/>
+                        </apex:outputPanel>                         
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem helpText="{!if(task.Route_To__c == $Label.Direct_Dispatch_Upgrade, $Setup.VisualForce_labels__c.Helptext_Product_If_VNX__c, '')}">
+                        <apex:outputPanel >
+                            <apex:outputText value="Product (If VNX)"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:inputText id="productIfVNX" maxlength="255" value="{!supportPartnerCollabInfo.Product_if_VNX__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Address"/>
+                        </apex:outputPanel>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c}" maxlength="255" style=""/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!nextPage}" helpText="{!if(task.Route_To__c == $Label.Direct_Dispatch_Upgrade, $Setup.VisualForce_labels__c.Helptext_BusinessImpact__c, '')}">
+                        <apex:outputPanel >
+                            <apex:outputText value="Business Impact"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Business_Impact__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE Contact"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!VCEContact}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Current Code"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Current_Code__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Contact Phone"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!ContactPhone}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Target Code"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Target_Code__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Contact Email"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!ContactEmail}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Customer Contact"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!CustomerContact}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Requested Target Date"/>
+                        </apex:outputPanel> 
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputfield value="{!task.Requested_Target_Date_CR__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Customer Work Phone"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!CustomerPhone}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Special Instructions"/>
+                        </apex:outputPanel>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.Special_Handling_Instructions__c}" styleClass="textAreaClass"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Customer Mobile Phone"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!CustomerMobile}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Customer Email"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!CustomerEmail}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Comments" />
+                        <apex:outputPanel layout="block">
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.Comments__c}" id="Comments" styleClass="textAreaComments"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageBlockSection>
+                
+            </apex:outputPanel>
+            
+            <!---------------------------------------------Direct Dispatch parts----------------------------------------------------------------->
+            <apex:outputPanel id="Direct_Dispatch_Parts_Section">
+                <apex:pageBlockSection collapsible="false" id="Direct_Dispatch_Parts" title="Collaboration Request" columns="2" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}">
+                    
+                    <apex:pageBlockSectionItem > 
+                        <span class="pbSubExtra"><span class="requiredLegend"><span class="requiredExampleOuter">
+                            <span class="requiredExample">&nbsp;</span></span><span class="requiredMark">*</span>
+                            <span  class="requiredText"> = Required information 
+                            </span>
+                            </span>
+                        </span> 
+                    </apex:pageBlockSectionItem> 
+                    <apex:pageBlockSectionItem /> 
+                    <apex:pageBlockSectionItem > 
+                        <apex:outputText value="VCE System Serial Number "/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!VCE_System_Serial_Number}"/>
+                        </apex:outputPanel>                         
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Online"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:selectList value="{!supportPartnerCollabInfo.Online__c}" id="multiComponentUpgrade"  size="1" multiselect="false">
+                                <apex:selectOptions value="{!online}"/>
+                            </apex:selectList>  
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE Account Name"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!VCEAccountName}" maxlength="255"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!nextPage}">
+                        <apex:outputPanel >
+                            <apex:outputText value="Hot Spare Invoked"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:selectList value="{!supportPartnerCollabInfo.HotSpareInvoked__c}"  id="multiComponentUpgrade"  size="1" multiselect="false">
+                                <apex:selectOptions value="{!HotSpareInvoked}"/>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Summary"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Summary__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Disruptive to environment"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:selectList value="{!supportPartnerCollabInfo.Disruptive_to_environment__c}" id="multiComponentUpgrade"  size="1" multiselect="false">
+                                <apex:selectOptions value="{!DisruptiveToEnvironment}"/>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Evidence"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" />
+                            <apex:inputText value="{!supportPartnerCollabInfo.Evidence__c}" maxlength="255" />
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Quantity"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>           
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Quantity__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!nextPage}">
+                        <apex:outputPanel >
+                            <apex:outputText value="Log Location"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!LogLocation}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Contract Type"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:selectList value="{!supportPartnerCollabInfo.ContractType__c}" size="1" multiselect="false">
+                                <apex:selectOptions value="{!ContractType}"/>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Part Type"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Part_Type__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Defective Serial Number"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Defective_Serial_Number__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Defective Part Number"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Defective_Part_Number__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Part Location"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.Part_Location__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="If drive, ready for replacement "/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:selectList value="{!supportPartnerCollabInfo.If_drive_ready_for_replacement__c}" size="1" multiselect="false">
+                                <apex:selectOptions value="{!ifDriveReadyForReplacement}"/>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Comments" />
+                        <apex:outputPanel layout="block">
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.Comments__c}" id="Comments" styleClass="textAreaComments"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageBlockSection>
+                
+                
+            </apex:outputPanel>
+            
+            <!-----------------------------------------------Collaboration Request Cisco RMA------------------------------------------->
+            
+            <!-- Could not put Required==true because, the page is submitted automatically and not calling the action method
+
+-->
+            <apex:outputPanel id="Route_To_RMA_Section">
+                <apex:pageBlockSection collapsible="false" id="Route_To_RMA" title="Collaboration Request" columns="2" rendered="{!nextPage && task.Route_To__c == $Setup.VisualForce_labels__c.RMA__c}">
+                    <apex:pageBlockSectionItem > 
+                        <span class="pbSubExtra"><span class="requiredLegend"><span class="requiredExampleOuter">
+                            <span class="requiredExample">&nbsp;</span></span><span class="requiredMark">*</span>
+                            <span  class="requiredText"> = Required information 
+                            </span>
+                            </span>
+                        </span> 
+                    </apex:pageBlockSectionItem> 
+                    <apex:pageBlockSectionItem /> 
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Company Name"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!VCEAccountName}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem /> 
+                    
+                    <apex:pageBlockSectionItem > 
+                        <apex:outputText value="VCE System Serial Number "/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!VCE_System_Serial_Number}"/>
+                        </apex:outputPanel>                         
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >  
+                        <apex:outputLabel value="Requested date/time for delivery"/>    
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!Task.Preferred_Date_Time__c}" id="idDoYouPreferPartsToBeDeliver"/> 
+                        </apex:outputPanel> 
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Address"/>    
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!Task.Site_Address__c}"/> 
+                        </apex:outputPanel> 
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Is the site Manned or Unmanned?"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField required="true" value="{!task.Is_the_site_Manned_or_Unmanned__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem helpText="{!$Setup.VisualForce_labels__c.Site_City_Help_Text__c}">
+                        <apex:outputLabel value="City"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!task.City__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Is the site accessible after 5:00 PM?"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField required="true" value="{!task.Is_the_site_accessible_after_5_00_PM__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="State"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!task.State_SubdivisionRMA__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="OK to leave parts with security? "/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" id="idOKToLeavePartsRequiredOP"/>
+                            <apex:inputField required="true" value="{!task.OK_to_leave_parts_with_security__c}" id="idOkToLeaveParts"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Postal Code"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!task.Postal_Code__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Special Delivery Instructions"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.Special_Handling_Instructions__c}" styleClass="textAreaClass"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Country"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!task.CountryRMA__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="VCE Contact"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!CustomerContact}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Field Engineer Install Required"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" id="idFERequiredOP"/>
+                            <apex:inputField required="true" value="{!task.Is_a_Field_Engineer_required_to_install__c}" onchange="hideFEFieldsForRMAOnChange(this)" id="idInstallRequired"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Contact Phone"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!CustomerPhone}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Field Engineer ID (license, passport)" id="Field_Engineer_ID_Text"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block" id="Field_Engineer_ID_Text_Div">
+                            <apex:inputField value="{!task.Field_Engineer_ID_Text__c}" id="Field_Engineer_ID_Text_Value"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Contact Email"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!CustomerEmail}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Field Engineer Call Ahead" id="Field_Engineer_Call_Ahead_Text"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block" id="Field_Engineer_Call_Ahead_Text_Div">
+                            <apex:inputField value="{!task.Field_Engineer_Call_Ahead_Text__c}" id="Field_Engineer_Call_Ahead_Text_Value"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Log Extract"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.logExtract__c}" styleClass="textAreaClass"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Field Engineer Other" id="Field_Engineer_Other_Text"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block" id="Field_Engineer_Other_Text_Div">
+                            <apex:inputField value="{!task.Field_Engineer_Other_Text__c}" id="Field_Engineer_Other_Text_Value"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Log Location"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!logLocation}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="FE Special Instructions" id="FESpecialInstructionsText"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block" id="FESpecialInstructionsDiv">
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.FE_Special_Instructions__c}" styleClass="textAreaClass" id="FESpecialInstructionsValue"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Additional Details"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:inputTextarea id="additionalDetailsId" value="{!supportPartnerCollabInfo.Additional_Details__c}" styleClass="textAreaClass"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="FE Time & Date (If Different from Part)" id="FETimeDateText"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block" id="FETimeDateDiv">
+                            <apex:inputField value="{!ServiceRequest.FETimeDate__c}" id="FETimeDateValue"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="FE Address (If Different from Part)" id="AddressText"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block" id="AddressDiv">
+                            <apex:inputtext maxlength="255" value="{!supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c}" id="AddressValue" styleClass="textAreaClass"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="FE Contact (If Different from Part)" id="VCEContactText"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block" id="VCEContactDiv">
+                            <apex:inputtext maxlength="255" value="{!VCEContact}" id="VCEContactValue"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Comments"/>
+                        <apex:outputPanel layout="block">
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.Comments__c}" id="Comments" styleClass="textAreaComments"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageBlockSection>
+                
+            </apex:outputPanel>
+            
+            
+            <!----------------------------------------Collaboration Request for All partners-------------------------------------------------->
+            <apex:outputPanel id="Route_To_Blank_Section">
+                <apex:pageBlockSection collapsible="false" id="Route_To_Blank" title="Collaboration Request" columns="2" rendered="{!nextPage && task.Route_To__c == null}">
+                    
+                    <apex:pageBlockSectionItem > 
+                        <span class="pbSubExtra"><span class="requiredLegend"><span class="requiredExampleOuter">
+                            <span class="requiredExample">&nbsp;</span></span><span class="requiredMark">*</span>
+                            <span  class="requiredText"> = Required information 
+                            </span>
+                            </span>
+                        </span> 
+                    </apex:pageBlockSectionItem> 
+                    <apex:pageBlockSectionItem /> 
+                    
+                    <apex:pageBlockSectionItem rendered="{!nextPage}" helpText="{!if(task.Route_To__c == $Label.Direct_Dispatch_Upgrade, $Setup.VisualForce_labels__c.Helptext_Product_If_VNX__c, '')}">
+                        <apex:outputPanel >
+                            <apex:outputText value="Products Affected"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255"  value="{!vProductsAffected}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        
+                        <apex:outputPanel >
+                            <apex:outputText value="Who Has Been Involved"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!VCEContact}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    
+                    <apex:pageBlockSectionItem helpText="{!if(task.Route_To__c == $Label.Direct_Dispatch_Upgrade, $Setup.VisualForce_labels__c.Helptext_BusinessImpact__c, '')}">
+                        <apex:outputPanel >
+                            <apex:outputText value="Problem Description"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputTextArea value="{!supportPartnerCollabInfo.Problem_Description__c}" styleClass="textAreaClass"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Expected Date of Engagement"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputfield value="{!task.Expected_Date_of_Engagement_CR__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Results of Investigation"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.Results_of_Investigation__c}" styleClass="textAreaClass"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Logs Location"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!LogLocation}" maxlength="255"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Business Impact"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!supportPartnerCollabInfo.Business_Impact__c}" maxlength="255"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="Special Handling Instructions"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.Special_Handling_Instructions__c}" styleClass="textAreaClass"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE Account Name"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!VCEAccountName}" maxlength="255"/>
+                        </apex:outputPanel>
+                        
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE Contact Email"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!task.VCE_Assigned_To__c == $Label.Cisco || task.VCE_Assigned_To__c == $Label.EMC}"/>
+                            <apex:inputText maxlength="255" value="{!ContactEmail}" rendered="{!task.VCE_Assigned_To__c == $Label.Cisco || task.VCE_Assigned_To__c == $Label.EMC}"/>
+                            <apex:outputtext rendered="{!task.VCE_Assigned_To__c == $Label.VMware}" value="{!ContactEmail}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE System Serial Number"/>
+                        </apex:outputPanel> 
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText value="{!VCE_System_Serial_Number}" maxlength="50"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE Contact Phone"/>
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!ContactPhone}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE System Location Address"/>
+                        </apex:outputPanel>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!supportPartnerCollabInfo.FE_Address_If_Different_from_Part__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE SR Number" />
+                        </apex:outputPanel>
+                        <apex:outputPanel >
+                            <apex:outputText value="{!vVCESRNumber}" />
+                        </apex:outputPanel>
+                        <!--apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="30" value="{!vVCESRNumber}"/>
+                        </apex:outputPanel-->
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputPanel >
+                            <apex:outputText value="VCE System Model"/>
+                        </apex:outputPanel> 
+                        <apex:outputPanel styleClass="requiredInput" layout="block"> 
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputText maxlength="255" value="{!vVCESystemModel}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    <apex:pageBlockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Comments" />
+                        <apex:outputPanel layout="block">
+                            <apex:inputTextarea value="{!supportPartnerCollabInfo.Comments__c}" id="Comments" styleClass="textAreaComments"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    
+                </apex:pageBlockSection>
+                
+            </apex:outputPanel>
+            
+            <!------------------------------------ This Section is Displayed only for Direct Dispatch Parts on EMC Task       -------------------------->    
+            
+            <apex:outputPanel id="TimetableActioPlanandOwnership">
+                <apex:pageBlockSection collapsible="false" id="TimetableAction" title="Timetable - Action Plan and Ownership" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="TSR/VPSE Contact" rendered="{!task.Route_To__c == $Label.Direct_Dispatch_Parts && nextPage}"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:inputText maxlength="255" value="{!VCEContact}" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:outputText value="{!VCEContact}" rendered="{!renderCollaborationTemplate && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem> 
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Customer Contact" rendered="{!task.Route_To__c == $Label.Direct_Dispatch_Parts && nextPage}"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:inputText maxlength="255" value="{!CustomerContact}" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:outputText value="{!CustomerContact}" rendered="{!renderCollaborationTemplate && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Contact Phone" rendered="{!task.Route_To__c == $Label.Direct_Dispatch_Parts && nextPage}"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:inputText maxlength="255" value="{!ContactPhone}" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:outputText value="{!ContactPhone}" rendered="{!renderCollaborationTemplate && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Customer Phone" rendered="{!task.Route_To__c == $Label.Direct_Dispatch_Parts && nextPage}"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:inputText maxlength="255" value="{!CustomerPhone}" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:outputText value="{!CustomerPhone}" rendered="{!renderCollaborationTemplate && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Contact Email" rendered="{!task.Route_To__c == $Label.Direct_Dispatch_Parts && nextPage}"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:inputText maxlength="255" value="{!ContactEmail}" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:outputText value="{!ContactEmail}" rendered="{!renderCollaborationTemplate && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Customer Mobile" rendered="{!task.Route_To__c == $Label.Direct_Dispatch_Parts && nextPage}"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:inputText maxlength="255" value="{!CustomerMobile}" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:outputText value="{!CustomerMobile}" rendered="{!renderCollaborationTemplate && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageblockSectionItem />
+                    
+                    <apex:pageBlockSectionItem >
+                        <apex:outputText value="Customer Email" rendered="{!task.Route_To__c == $Label.Direct_Dispatch_Parts && nextPage}"/>
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:inputText maxlength="255" value="{!CustomerEmail}" rendered="{!nextPage && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                            <apex:outputText value="{!CustomerEmail}" rendered="{!renderCollaborationTemplate && task.Route_To__c == $Label.Direct_Dispatch_Parts}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="Reminder">
+                <apex:pageBlockSection collapsible="false" title="Reminder" columns="1" rendered="{!nextPage}">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Reminder Set"/>
+                        <apex:Inputfield value="{!task.IsReminderSet}" />
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            
+            <apex:outputPanel id="CollaborationRequest">
+                <apex:pageBlockSection title="Collaboration Request Information" columns="1" rendered="{!renderCollaborationTemplateNew}">
+                    
+                    <table>
+                        <tr>
+                            <td>
+                                <apex:outputField value="{!task.Description}" style="width:1000px; height:612px;"/>
+                                
+                            </td>
+                        </tr>
+                    </table>
+                    
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
